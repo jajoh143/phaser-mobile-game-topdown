@@ -2,16 +2,20 @@
 """
 Top-down humanoid character sprite generator for Phaser 3.
 
-Generates a 16x16 walk cycle spritesheet (4 directions x 4 frames)
-with JSON texture atlas and browser preview.
+Generates a 16x16 spritesheet with multiple animations:
+  - walk   (4 directions x 4 frames)
+  - jump   (4 directions x 4 frames)
+  - crouch (4 directions x 4 frames)
+  - interact (4 directions x 4 frames)
 
 Style reference: chibi top-down RPG sprites with rounded heads,
-dark outlines, 2-tone shading, and diverse hair styles.
+dark outlines, 2-tone shading, skin-toned arms, diverse hair styles.
 
 Usage:
     python generate_character.py --preset 0 --name player
     python generate_character.py --preset 3 --hair afro --name npc1
     python generate_character.py --list-presets
+    python generate_character.py --all
 """
 
 import argparse
@@ -29,6 +33,7 @@ PADDING = 0
 
 DIRECTIONS = ["down", "left", "right", "up"]
 FRAMES_PER_DIR = 4
+ANIMATIONS = ["walk", "jump", "crouch", "interact"]
 
 # ---------------------------------------------------------------------------
 # COLOR PALETTES — each preset defines a full character look
@@ -168,27 +173,19 @@ PRESETS = [
 
 # ---------------------------------------------------------------------------
 # HAIR STYLES
-# Defined as pixel masks relative to the head area.
-# Each style is a dict with "front", "back", "left", "right" keys.
-# Each direction value is a list of (x, y) pixel positions to fill,
-# relative to the frame's top-left (0,0).
 # ---------------------------------------------------------------------------
 
 def _make_hair_short():
     """Short cropped hair — sits close to the head."""
     front = []
-    # Top row across full head width
     for x in range(5, 11):
         front.append((x, 1))
-    # Second row
     for x in range(4, 12):
         front.append((x, 2))
-    # Side bits
     front.append((4, 3))
     front.append((11, 3))
 
-    back = list(front)  # Same from behind
-    # Add back coverage
+    back = list(front)
     for x in range(5, 11):
         back.append((x, 3))
 
@@ -218,7 +215,6 @@ def _make_hair_long():
         front.append((x, 1))
     for x in range(4, 12):
         front.append((x, 2))
-    # Side drapes
     front.append((4, 3))
     front.append((4, 4))
     front.append((4, 5))
@@ -239,14 +235,11 @@ def _make_hair_long():
         back.append((x, 3))
     for x in range(4, 12):
         back.append((x, 4))
-    # Drape down the back
     for x in range(5, 11):
         back.append((x, 5))
         back.append((x, 6))
         back.append((x, 7))
         back.append((x, 8))
-    front.append((4, 3))
-    front.append((11, 3))
 
     left = []
     for x in range(5, 11):
@@ -280,17 +273,14 @@ def _make_hair_long():
 def _make_hair_afro():
     """Big round afro — extends above and around the head."""
     front = []
-    # Very top — narrow
     for x in range(6, 10):
         front.append((x, 0))
-    # Full width rows
     for x in range(4, 12):
         front.append((x, 1))
     for x in range(3, 13):
         front.append((x, 2))
     for x in range(3, 13):
         front.append((x, 3))
-    # Sides only at face level
     front.append((3, 4))
     front.append((3, 5))
     front.append((12, 4))
@@ -352,7 +342,6 @@ def _make_hair_ponytail():
         back.append((x, 1))
     for x in range(4, 12):
         back.append((x, 2))
-    # Ponytail drop from center
     back.append((7, 3))
     back.append((8, 3))
     back.append((7, 4))
@@ -385,7 +374,6 @@ def _make_hair_ponytail():
 def _make_hair_spiky():
     """Spiky upward hair."""
     front = []
-    # Spikes at top
     front.append((5, 0))
     front.append((7, 0))
     front.append((9, 0))
@@ -432,7 +420,6 @@ HAIR_STYLES = {
     "spiky": _make_hair_spiky(),
 }
 
-# Default hair style per preset index (cycles through styles)
 DEFAULT_HAIR = ["short", "short", "short", "afro", "long", "ponytail", "spiky", "long"]
 
 
@@ -440,33 +427,32 @@ DEFAULT_HAIR = ["short", "short", "short", "afro", "long", "ponytail", "spiky", 
 # PIXEL TEMPLATES
 #
 # The base character body is drawn pixel-by-pixel per direction.
-# Each template is a list of (x, y, color_key) tuples defining every pixel.
-# "shade" suffix means use the darker tone of that color.
+# Each template is a list of (x, y, color_key) tuples.
 #
 # Head occupies roughly rows 1-6 (large chibi head).
-# Body occupies rows 7-12.
-# Legs/feet occupy rows 13-15.
+# Body occupies rows 7-10 (shirt core + arms).
+# Legs/feet occupy rows 11-14.
+#
+# IMPORTANT: Arms use skin/skin_shade colors (not shirt) so the
+# walk/interact animations are visually distinct from the torso.
 # ---------------------------------------------------------------------------
 
 def _build_body_down():
-    """Facing-down (toward camera) body template — no hair, no animation."""
+    """Facing-down (toward camera) body template."""
     pixels = []
 
     # --- Head outline (rounded) ---
-    # Row 1: top of head
     for x in range(6, 10):
         pixels.append((x, 1, "outline"))
-    # Row 2: wider
     pixels.append((5, 2, "outline"))
     for x in range(6, 10):
         pixels.append((x, 2, "skin"))
     pixels.append((10, 2, "outline"))
-    # Row 3
     pixels.append((4, 3, "outline"))
     for x in range(5, 11):
         pixels.append((x, 3, "skin"))
     pixels.append((11, 3, "outline"))
-    # Row 4 — eyes row
+    # Row 4 — eyes
     pixels.append((4, 4, "outline"))
     pixels.append((5, 4, "skin"))
     pixels.append((6, 4, "eye_white"))
@@ -475,36 +461,36 @@ def _build_body_down():
     pixels.append((9, 4, "eye_white"))
     pixels.append((10, 4, "eye"))
     pixels.append((11, 4, "outline"))
-    # Row 5 — lower face
+    # Row 5
     pixels.append((4, 5, "outline"))
     for x in range(5, 11):
         pixels.append((x, 5, "skin"))
     pixels.append((11, 5, "outline"))
-    # Row 6 — chin (narrower)
+    # Row 6 — chin
     pixels.append((5, 6, "outline"))
     for x in range(6, 10):
         pixels.append((x, 6, "skin_shade"))
     pixels.append((10, 6, "outline"))
 
     # --- Torso ---
-    # Row 7 — neck/top of shirt
+    # Row 7 — neck/collar
     pixels.append((6, 7, "outline"))
     pixels.append((7, 7, "shirt"))
     pixels.append((8, 7, "shirt"))
     pixels.append((9, 7, "outline"))
-    # Row 8 — full shirt with arms
+    # Row 8 — shirt with skin-toned arms
     pixels.append((4, 8, "outline"))
-    pixels.append((5, 8, "shirt"))
+    pixels.append((5, 8, "skin"))       # left arm
     for x in range(6, 10):
         pixels.append((x, 8, "shirt"))
-    pixels.append((10, 8, "shirt"))
+    pixels.append((10, 8, "skin"))      # right arm
     pixels.append((11, 8, "outline"))
     # Row 9
     pixels.append((4, 9, "outline"))
-    pixels.append((5, 9, "shirt_shade"))
+    pixels.append((5, 9, "skin_shade"))  # left arm shade
     for x in range(6, 10):
         pixels.append((x, 9, "shirt"))
-    pixels.append((10, 9, "shirt_shade"))
+    pixels.append((10, 9, "skin_shade")) # right arm shade
     pixels.append((11, 9, "outline"))
     # Row 10 — bottom of shirt
     pixels.append((5, 10, "outline"))
@@ -513,14 +499,12 @@ def _build_body_down():
     pixels.append((10, 10, "outline"))
 
     # --- Legs ---
-    # Row 11
     pixels.append((5, 11, "outline"))
     pixels.append((6, 11, "pants"))
     pixels.append((7, 11, "pants"))
     pixels.append((8, 11, "pants"))
     pixels.append((9, 11, "pants"))
     pixels.append((10, 11, "outline"))
-    # Row 12
     pixels.append((5, 12, "outline"))
     pixels.append((6, 12, "pants_shade"))
     pixels.append((7, 12, "outline"))
@@ -529,14 +513,12 @@ def _build_body_down():
     pixels.append((10, 12, "outline"))
 
     # --- Feet ---
-    # Row 13
     pixels.append((5, 13, "outline"))
     pixels.append((6, 13, "shoes"))
     pixels.append((7, 13, "outline"))
     pixels.append((8, 13, "outline"))
     pixels.append((9, 13, "shoes"))
     pixels.append((10, 13, "outline"))
-    # Row 14
     pixels.append((5, 14, "outline"))
     pixels.append((6, 14, "shoes_shade"))
     pixels.append((7, 14, "outline"))
@@ -551,7 +533,7 @@ def _build_body_up():
     """Facing-up (away from camera) body template."""
     pixels = []
 
-    # --- Head outline (rounded, back of head) ---
+    # --- Head (back of head) ---
     for x in range(6, 10):
         pixels.append((x, 1, "outline"))
     pixels.append((5, 2, "outline"))
@@ -562,7 +544,6 @@ def _build_body_up():
     for x in range(5, 11):
         pixels.append((x, 3, "skin_shade"))
     pixels.append((11, 3, "outline"))
-    # Row 4 — no eyes from behind
     pixels.append((4, 4, "outline"))
     for x in range(5, 11):
         pixels.append((x, 4, "skin_shade"))
@@ -576,22 +557,22 @@ def _build_body_up():
         pixels.append((x, 6, "skin_shade"))
     pixels.append((10, 6, "outline"))
 
-    # --- Torso (back view) ---
+    # --- Torso (back) ---
     pixels.append((6, 7, "outline"))
     pixels.append((7, 7, "shirt_shade"))
     pixels.append((8, 7, "shirt_shade"))
     pixels.append((9, 7, "outline"))
     pixels.append((4, 8, "outline"))
-    pixels.append((5, 8, "shirt_shade"))
+    pixels.append((5, 8, "skin_shade"))    # left arm
     for x in range(6, 10):
         pixels.append((x, 8, "shirt"))
-    pixels.append((10, 8, "shirt_shade"))
+    pixels.append((10, 8, "skin_shade"))   # right arm
     pixels.append((11, 8, "outline"))
     pixels.append((4, 9, "outline"))
-    pixels.append((5, 9, "shirt_shade"))
+    pixels.append((5, 9, "skin_shade"))    # left arm shade
     for x in range(6, 10):
         pixels.append((x, 9, "shirt_shade"))
-    pixels.append((10, 9, "shirt_shade"))
+    pixels.append((10, 9, "skin_shade"))   # right arm shade
     pixels.append((11, 9, "outline"))
     pixels.append((5, 10, "outline"))
     for x in range(6, 10):
@@ -633,7 +614,7 @@ def _build_body_left():
     """Facing-left body template (side profile)."""
     pixels = []
 
-    # --- Head (side profile, shifted left) ---
+    # --- Head (side) ---
     for x in range(5, 9):
         pixels.append((x, 1, "outline"))
     pixels.append((4, 2, "outline"))
@@ -644,7 +625,7 @@ def _build_body_left():
     for x in range(4, 10):
         pixels.append((x, 3, "skin"))
     pixels.append((10, 3, "outline"))
-    # Row 4 — eye (only left eye visible)
+    # Row 4 — eye
     pixels.append((3, 4, "outline"))
     pixels.append((4, 4, "skin"))
     pixels.append((5, 4, "eye_white"))
@@ -662,22 +643,22 @@ def _build_body_left():
         pixels.append((x, 6, "skin_shade"))
     pixels.append((9, 6, "outline"))
 
-    # --- Torso (side) ---
+    # --- Torso (side) with skin arms ---
     pixels.append((5, 7, "outline"))
     pixels.append((6, 7, "shirt"))
     pixels.append((7, 7, "shirt"))
     pixels.append((8, 7, "outline"))
     pixels.append((4, 8, "outline"))
-    pixels.append((5, 8, "shirt"))
+    pixels.append((5, 8, "skin"))       # front arm
     pixels.append((6, 8, "shirt"))
     pixels.append((7, 8, "shirt"))
-    pixels.append((8, 8, "shirt_shade"))
+    pixels.append((8, 8, "skin_shade")) # back arm
     pixels.append((9, 8, "outline"))
     pixels.append((4, 9, "outline"))
-    pixels.append((5, 9, "shirt"))
+    pixels.append((5, 9, "skin_shade")) # front arm shade
     pixels.append((6, 9, "shirt"))
     pixels.append((7, 9, "shirt_shade"))
-    pixels.append((8, 9, "shirt_shade"))
+    pixels.append((8, 9, "skin_shade")) # back arm shade
     pixels.append((9, 9, "outline"))
     pixels.append((5, 10, "outline"))
     pixels.append((6, 10, "shirt_shade"))
@@ -710,7 +691,6 @@ def _build_body_left():
 def _build_body_right():
     """Facing-right body template (mirror of left)."""
     left = _build_body_left()
-    # Mirror horizontally: new_x = (FRAME_W - 1) - old_x
     return [(FRAME_W - 1 - x, y, c) for x, y, c in left]
 
 
@@ -722,12 +702,7 @@ BODY_TEMPLATES = {
 }
 
 # ---------------------------------------------------------------------------
-# ANIMATION DATA
-#
-# Each walk frame applies pixel offsets to specific body regions.
-# We define regions by Y-range and apply (dx, dy) shifts.
-# Region keys: "head" (y 1-6), "torso" (y 7-10), "arm_l"/"arm_r",
-# "leg_l" (y 11-14 left half), "leg_r" (y 11-14 right half)
+# ANIMATION REGION CLASSIFICATION
 # ---------------------------------------------------------------------------
 
 def _region_for_pixel(x, y, direction):
@@ -735,69 +710,187 @@ def _region_for_pixel(x, y, direction):
     if y <= 6:
         return "head"
     if y <= 10:
-        # Arm detection based on x position
         if direction in ("down", "up"):
             if x <= 5:
                 return "arm_l"
             if x >= 10:
                 return "arm_r"
         elif direction == "left":
-            if x <= 4:
+            if x <= 5:
                 return "arm_l"
-            if x >= 9:
+            if x >= 8:
                 return "arm_r"
         elif direction == "right":
-            if x >= 11:
+            if x >= 10:
                 return "arm_r"
-            if x <= 6:
+            if x <= 7:
                 return "arm_l"
         return "torso"
-    # Legs and feet
     if direction in ("down", "up"):
         if x <= 7:
             return "leg_l"
         return "leg_r"
     else:
-        # Side view — treat as single leg pair for simpler animation
         if y <= 12:
-            return "leg_l"  # front leg
-        return "leg_r"  # back leg / feet
+            return "leg_l"
+        return "leg_r"
 
 
-# Walk cycle offsets per region: [frame0, frame1, frame2, frame3]
-# Frame 0 = stand, 1 = step left, 2 = stand, 3 = step right
-WALK_OFFSETS = {
-    "down": {
-        "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
-        "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-        "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
-        "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+# ---------------------------------------------------------------------------
+# ANIMATION OFFSET TABLES
+#
+# Each animation is a dict of direction -> region -> [(dx,dy) x 4 frames].
+# Frame 0 = neutral/stand, frames 1-3 = animation progression.
+# ---------------------------------------------------------------------------
+
+ANIM_OFFSETS = {
+    # --- WALK ---
+    # Frame: 0=stand, 1=step-L, 2=pass, 3=step-R
+    "walk": {
+        "down": {
+            "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
+            "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
+            "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+        },
+        "up": {
+            "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
+            "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
+            "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+        },
+        "left": {
+            "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
+            "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
+            "arm_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "arm_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+            "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+        },
+        "right": {
+            "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
+            "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
+            "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
+            "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+        },
     },
-    "up": {
-        "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
-        "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-        "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
-        "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+
+    # --- JUMP ---
+    # Frame: 0=crouch-prepare, 1=lift off, 2=peak (body up), 3=land
+    "jump": {
+        "down": {
+            "head":  [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "torso": [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "arm_l": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "arm_r": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "leg_l": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+            "leg_r": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+        },
+        "up": {
+            "head":  [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "torso": [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "arm_l": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "arm_r": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "leg_l": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+            "leg_r": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+        },
+        "left": {
+            "head":  [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "torso": [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "arm_l": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "arm_r": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "leg_l": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+            "leg_r": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+        },
+        "right": {
+            "head":  [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "torso": [(0, 1),  (0, -1), (0, -2), (0, 0)],
+            "arm_l": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "arm_r": [(0, 1),  (0, -2), (0, -3), (0, 0)],
+            "leg_l": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+            "leg_r": [(0, 1),  (0, 0),  (0, -1), (0, 1)],
+        },
     },
-    "left": {
-        "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
-        "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-        "arm_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "arm_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
-        "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+
+    # --- CROUCH ---
+    # Frame: 0=standing, 1=lowering, 2=fully crouched, 3=lowering (same as 1)
+    "crouch": {
+        "down": {
+            "head":  [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "torso": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_l": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+        },
+        "up": {
+            "head":  [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "torso": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_l": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+        },
+        "left": {
+            "head":  [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "torso": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_l": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+        },
+        "right": {
+            "head":  [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "torso": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_l": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "arm_r": [(0, 0), (0, 1),  (0, 2),  (0, 1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 1),  (0, 0)],
+        },
     },
-    "right": {
-        "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
-        "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-        "arm_l": [(0, 0), (0, -1), (0, 0), (0, 1)],
-        "arm_r": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_l": [(0, 0), (0, 1),  (0, 0), (0, -1)],
-        "leg_r": [(0, 0), (0, -1), (0, 0), (0, 1)],
+
+    # --- INTERACT ---
+    # Right hand rises to touch something in front.
+    # Frame: 0=stand, 1=arm raising, 2=arm fully extended, 3=arm lowering
+    "interact": {
+        "down": {
+            "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_r": [(0, 0), (1, -1), (2, -2), (1, -1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "up": {
+            "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_r": [(0, 0), (1, -1), (2, -2), (1, -1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "left": {
+            "head":  [(0, 0), (0, 0),  (0, 0),   (0, 0)],
+            "torso": [(0, 0), (0, 0),  (0, 0),   (0, 0)],
+            "arm_l": [(0, 0), (-1, -1),(-2, -2), (-1, -1)],
+            "arm_r": [(0, 0), (0, 0),  (0, 0),   (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),   (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),   (0, 0)],
+        },
+        "right": {
+            "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "arm_r": [(0, 0), (1, -1), (2, -2), (1, -1)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
     },
 }
 
@@ -806,30 +899,28 @@ WALK_OFFSETS = {
 # RENDERING
 # ---------------------------------------------------------------------------
 
-def render_frame(direction: str, frame_idx: int, palette: dict, hair_style: str) -> Image.Image:
-    """Render a single 16x16 frame."""
+def render_frame(direction: str, frame_idx: int, palette: dict,
+                 hair_style: str, animation: str = "walk") -> Image.Image:
+    """Render a single 16x16 frame for any animation type."""
     img = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
 
     body_pixels = BODY_TEMPLATES[direction]
-    offsets = WALK_OFFSETS[direction]
+    offsets = ANIM_OFFSETS[animation][direction]
 
-    # Draw body pixels with animation offsets
     for bx, by, color_key in body_pixels:
         region = _region_for_pixel(bx, by, direction)
         dx, dy = offsets[region][frame_idx]
         px, py = bx + dx, by + dy
         if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
-            color = palette[color_key]
-            img.putpixel((px, py), color)
+            img.putpixel((px, py), palette[color_key])
 
-    # Draw hair on top (hair moves with head)
+    # Hair moves with head
     hair_data = HAIR_STYLES.get(hair_style, HAIR_STYLES["short"])
     hair_pixels = hair_data.get(direction, [])
     head_dx, head_dy = offsets["head"][frame_idx]
     for hx, hy in hair_pixels:
         px, py = hx + head_dx, hy + head_dy
         if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
-            # Use shade for pixels that overlap with lower hair area
             if hy >= 3:
                 img.putpixel((px, py), palette["hair_shade"])
             else:
@@ -839,52 +930,71 @@ def render_frame(direction: str, frame_idx: int, palette: dict, hair_style: str)
 
 
 def build_spritesheet(palette: dict, hair_style: str = "short") -> tuple[Image.Image, dict]:
-    """Build the full spritesheet and return (image, atlas_data)."""
+    """Build the full spritesheet with all animations.
+
+    Layout (rows):
+      walk_down, walk_left, walk_right, walk_up,
+      jump_down, jump_left, jump_right, jump_up,
+      crouch_down, crouch_left, crouch_right, crouch_up,
+      interact_down, interact_left, interact_right, interact_up
+    """
     cols = FRAMES_PER_DIR
-    rows = len(DIRECTIONS)
-    sheet_w = cols * (FRAME_W + PADDING) - PADDING
-    sheet_h = rows * (FRAME_H + PADDING) - PADDING
+    rows = len(ANIMATIONS) * len(DIRECTIONS)
+    sheet_w = cols * FRAME_W
+    sheet_h = rows * FRAME_H
 
     sheet = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
     frames_meta: dict = {}
 
-    for row, direction in enumerate(DIRECTIONS):
-        for col in range(FRAMES_PER_DIR):
-            frame_img = render_frame(direction, col, palette, hair_style)
-            x = col * (FRAME_W + PADDING)
-            y = row * (FRAME_H + PADDING)
-            sheet.paste(frame_img, (x, y))
+    row = 0
+    for anim in ANIMATIONS:
+        for direction in DIRECTIONS:
+            for col in range(FRAMES_PER_DIR):
+                frame_img = render_frame(direction, col, palette, hair_style, anim)
+                x = col * FRAME_W
+                y = row * FRAME_H
+                sheet.paste(frame_img, (x, y))
 
-            frame_name = f"walk_{direction}_{col}"
-            frames_meta[frame_name] = {
-                "frame": {"x": x, "y": y, "w": FRAME_W, "h": FRAME_H},
-                "rotated": False,
-                "trimmed": False,
-                "spriteSourceSize": {"x": 0, "y": 0, "w": FRAME_W, "h": FRAME_H},
-                "sourceSize": {"w": FRAME_W, "h": FRAME_H},
-            }
+                frame_name = f"{anim}_{direction}_{col}"
+                frames_meta[frame_name] = {
+                    "frame": {"x": x, "y": y, "w": FRAME_W, "h": FRAME_H},
+                    "rotated": False,
+                    "trimmed": False,
+                    "spriteSourceSize": {"x": 0, "y": 0, "w": FRAME_W, "h": FRAME_H},
+                    "sourceSize": {"w": FRAME_W, "h": FRAME_H},
+                }
+            row += 1
 
     return sheet, frames_meta
 
 
 def build_atlas(sprite_name: str, image_file: str, frames_meta: dict, sheet_size: tuple[int, int]) -> dict:
     """Build a Phaser-compatible JSON texture atlas."""
+    # Also include animation groupings for easy Phaser anim creation
+    anim_groups = {}
+    for anim in ANIMATIONS:
+        for direction in DIRECTIONS:
+            key = f"{anim}_{direction}"
+            anim_groups[key] = [f"{anim}_{direction}_{i}" for i in range(FRAMES_PER_DIR)]
+
     return {
         "frames": frames_meta,
+        "animations": anim_groups,
         "meta": {
             "app": "sprite-generator",
-            "version": "2.0",
+            "version": "3.0",
             "image": image_file,
             "format": "RGBA8888",
             "size": {"w": sheet_size[0], "h": sheet_size[1]},
             "scale": "1",
-            "smartupdate": "",
         },
     }
 
 
 def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> str:
-    """Generate a standalone HTML file that animates the spritesheet in-browser."""
+    """Generate a standalone HTML preview with animation type + direction controls."""
+    animations_json = json.dumps(ANIMATIONS)
+    directions_json = json.dumps(DIRECTIONS)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -901,7 +1011,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
     padding: 2rem;
   }}
   h1 {{ margin-bottom: 0.5rem; }}
-  .info {{ color: #888; margin-bottom: 1.5rem; }}
+  .info {{ color: #888; margin-bottom: 1rem; }}
   canvas {{
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -910,16 +1020,24 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
   }}
   .controls {{
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }}
+  .controls label {{
+    color: #888;
+    margin-right: 0.5rem;
+    line-height: 2;
   }}
   button {{
     background: #333;
     color: #eee;
     border: 1px solid #555;
-    padding: 0.4rem 1rem;
+    padding: 0.4rem 0.8rem;
     cursor: pointer;
     font-family: monospace;
+    font-size: 0.85rem;
   }}
   button:hover {{ background: #555; }}
   button.active {{ background: #0a7; color: #fff; }}
@@ -931,15 +1049,15 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">Generated spritesheet preview — v2 (pixel art style)</p>
+<p class="info">v3 — walk / jump / crouch / interact</p>
 
 <canvas id="anim" width="{FRAME_W * 8}" height="{FRAME_H * 8}"></canvas>
 
-<div class="controls">
-  <button data-dir="0" class="active">Down</button>
-  <button data-dir="1">Left</button>
-  <button data-dir="2">Right</button>
-  <button data-dir="3">Up</button>
+<div class="controls" id="animBtns">
+  <label>Anim:</label>
+</div>
+<div class="controls" id="dirBtns">
+  <label>Dir:</label>
 </div>
 
 <p class="info">Full spritesheet:</p>
@@ -951,6 +1069,9 @@ const FRAME_H = {FRAME_H};
 const COLS = {FRAMES_PER_DIR};
 const SCALE = 8;
 const FPS = 6;
+const ANIMATIONS = {animations_json};
+const DIRECTIONS = {directions_json};
+const DIRS_PER_ANIM = DIRECTIONS.length;
 
 const canvas = document.getElementById("anim");
 const ctx = canvas.getContext("2d");
@@ -959,30 +1080,47 @@ ctx.imageSmoothingEnabled = false;
 const img = new Image();
 img.src = "{image_file}";
 
-let dirRow = 0;
+let animIdx = 0;
+let dirIdx = 0;
 let frameIdx = 0;
+
+function getRow() {{
+  return animIdx * DIRS_PER_ANIM + dirIdx;
+}}
+
+function makeButtons(containerId, labels, setter) {{
+  const container = document.getElementById(containerId);
+  labels.forEach((label, i) => {{
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.dataset.idx = i;
+    if (i === 0) btn.classList.add("active");
+    btn.addEventListener("click", () => {{
+      container.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      setter(i);
+    }});
+    container.appendChild(btn);
+  }});
+}}
+
+makeButtons("animBtns", ANIMATIONS, i => {{ animIdx = i; }});
+makeButtons("dirBtns", DIRECTIONS, i => {{ dirIdx = i; }});
 
 img.onload = () => {{
   document.getElementById("sheetImg").src = "{image_file}";
   document.getElementById("sheetImg").style.width = (img.width * 4) + "px";
   setInterval(() => {{
     frameIdx = (frameIdx + 1) % COLS;
+    const row = getRow();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(
       img,
-      frameIdx * FRAME_W, dirRow * FRAME_H, FRAME_W, FRAME_H,
+      frameIdx * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H,
       0, 0, FRAME_W * SCALE, FRAME_H * SCALE
     );
   }}, 1000 / FPS);
 }};
-
-document.querySelectorAll("button[data-dir]").forEach(btn => {{
-  btn.addEventListener("click", () => {{
-    dirRow = parseInt(btn.dataset.dir);
-    document.querySelectorAll("button[data-dir]").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-  }});
-}});
 </script>
 </body>
 </html>"""
@@ -1012,19 +1150,18 @@ def main():
             hair = DEFAULT_HAIR[i] if i < len(DEFAULT_HAIR) else "short"
             print(f"  {i}: {p['name']}  (default hair: {hair})")
         print(f"\nHair styles: {', '.join(HAIR_STYLES.keys())}")
+        print(f"Animations:  {', '.join(ANIMATIONS)}")
         return
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     if args.all:
-        # Generate all presets
         for i, preset in enumerate(PRESETS):
             hair = DEFAULT_HAIR[i] if i < len(DEFAULT_HAIR) else "short"
             _generate_one(f"char_{i}", preset, hair, i)
         print(f"\nGenerated {len(PRESETS)} characters.")
         return
 
-    # Single generation
     if args.preset < 0 or args.preset >= len(PRESETS):
         parser.error(f"--preset must be 0-{len(PRESETS)-1}")
     palette = PRESETS[args.preset]
@@ -1056,9 +1193,10 @@ def _generate_one(sprite_name: str, palette: dict, hair_style: str, preset_idx: 
         f.write(build_preview_html(sprite_name, image_file, atlas_file))
     print(f"  Preview:     {preview_path}")
 
-    total_frames = len(DIRECTIONS) * FRAMES_PER_DIR
+    total_frames = len(ANIMATIONS) * len(DIRECTIONS) * FRAMES_PER_DIR
     print(f"  Style:       {palette['name']} | hair: {hair_style}")
-    print(f"  Frames:      {total_frames} ({len(DIRECTIONS)} dirs x {FRAMES_PER_DIR} frames)")
+    print(f"  Animations:  {', '.join(ANIMATIONS)}")
+    print(f"  Frames:      {total_frames} ({len(ANIMATIONS)} anims x {len(DIRECTIONS)} dirs x {FRAMES_PER_DIR} frames)")
     print(f"  Frame size:  {FRAME_W}x{FRAME_H}px\n")
 
 

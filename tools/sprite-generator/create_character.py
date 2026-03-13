@@ -96,7 +96,8 @@ import generate_character as gen  # noqa: E402
 
 def run_wizard():
     print("=" * 52)
-    print("  Character Sprite Builder (v2 — Pixel Art Style)")
+    print("  Character Sprite Builder (v3 — Pixel Art Style)")
+    print("  Animations: walk, jump, crouch, interact")
     print("=" * 52)
 
     # --- Step 1: Name ---
@@ -179,8 +180,10 @@ def run_wizard():
         f.write(gen.build_preview_html(name, image_file, atlas_file))
     print(f"  Preview:     {preview_path}")
 
-    total = len(gen.DIRECTIONS) * gen.FRAMES_PER_DIR
-    print(f"\n  {total} frames generated ({gen.FRAME_W}x{gen.FRAME_H}px each). Done!")
+    total = len(gen.ANIMATIONS) * len(gen.DIRECTIONS) * gen.FRAMES_PER_DIR
+    print(f"\n  {total} frames generated ({gen.FRAME_W}x{gen.FRAME_H}px each).")
+    print(f"  Animations: {', '.join(gen.ANIMATIONS)}")
+    print(f"  Done!")
 
 
 # ---------------------------------------------------------------------------
