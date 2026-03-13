@@ -83,6 +83,16 @@ def _darken(color: tuple[int, int, int, int], amount: int = 30) -> tuple[int, in
     )
 
 
+def _lighten(color: tuple[int, int, int, int], amount: int = 30) -> tuple[int, int, int, int]:
+    """Create a lighter highlight of a color."""
+    return (
+        min(255, color[0] + amount),
+        min(255, color[1] + amount),
+        min(255, color[2] + amount),
+        255,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Import the generator (sibling module)
 # ---------------------------------------------------------------------------
@@ -95,10 +105,11 @@ import generate_character as gen  # noqa: E402
 # ---------------------------------------------------------------------------
 
 def run_wizard():
-    print("=" * 52)
-    print("  Character Sprite Builder (v3 — Pixel Art Style)")
+    print("=" * 56)
+    print("  Character Sprite Builder (v4 — 32x48 Chibi Style)")
+    print("  Frame: 32x48px (2x3 tiles on 16px grid)")
     print("  Animations: walk, jump, crouch, interact")
-    print("=" * 52)
+    print("=" * 56)
 
     # --- Step 1: Name ---
     print("\n--- Step 1: Character Name ---")
@@ -210,9 +221,12 @@ def build_custom_palette() -> dict:
     palette = {"name": "Custom"}
     for key in COLOR_KEYS:
         palette[key] = ask_color(f"  {key}", CUSTOM_DEFAULTS[key])
-    # Auto-generate shade variants
+    # Auto-generate shade/highlight variants for 32x48 3-tone system
     for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
         palette[f"{base_key}_shade"] = _darken(palette[base_key])
+    palette["skin_dark"] = _darken(palette["skin"], amount=45)
+    palette["hair_highlight"] = _lighten(palette["hair"])
+    palette["shirt_highlight"] = _lighten(palette["shirt"])
     return palette
 
 
@@ -223,9 +237,12 @@ def customize_palette(palette: dict) -> dict:
         current = palette.get(key, CUSTOM_DEFAULTS[key])
         new_color = ask_color(f"  {key}", current)
         palette[key] = new_color
-    # Regenerate shades from updated base colors
+    # Regenerate shade/highlight variants
     for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
         palette[f"{base_key}_shade"] = _darken(palette[base_key])
+    palette["skin_dark"] = _darken(palette["skin"], amount=45)
+    palette["hair_highlight"] = _lighten(palette["hair"])
+    palette["shirt_highlight"] = _lighten(palette["shirt"])
     return palette
 
 
