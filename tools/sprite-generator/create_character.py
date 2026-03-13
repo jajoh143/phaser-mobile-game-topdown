@@ -6,6 +6,7 @@ step-by-step via console prompts instead of requiring CLI flags.
 Run:
     python create_character.py
 """
+# v6 — 16x16 top-heavy chibi style (renders at 2x on 32x32 world grid)
 
 import os
 import sys
@@ -106,8 +107,8 @@ import generate_character as gen  # noqa: E402
 
 def run_wizard():
     print("=" * 56)
-    print("  Character Sprite Builder (v5 — 32x48 Chibi Style)")
-    print("  Frame: 32x48px (1x1.5 tiles on 32px grid)")
+    print("  Character Sprite Builder (v6 — 16x16 Chibi Style)")
+    print("  Frame: 16x16px (renders 2x on 32x32 world grid)")
     print("  Animations: walk, jump, crouch, interact")
     print("=" * 56)
 
@@ -201,18 +202,18 @@ def run_wizard():
 # Custom palette builder
 # ---------------------------------------------------------------------------
 
-COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "eye_white", "mouth"]
+COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "mouth_inner", "mouth_line"]
 
 CUSTOM_DEFAULTS = {
-    "skin":      (210, 180, 150, 255),
-    "hair":      (60, 45, 30, 255),
-    "shirt":     (100, 115, 130, 255),
-    "pants":     (65, 65, 75, 255),
-    "shoes":     (50, 42, 38, 255),
-    "outline":   (35, 30, 28, 255),
-    "eye":       (30, 30, 30, 255),
-    "eye_white": (240, 240, 240, 255),
-    "mouth":     (155, 85, 75, 255),
+    "skin":        (235, 190, 160, 255),
+    "hair":        (55, 60, 120, 255),
+    "shirt":       (190, 60, 55, 255),
+    "pants":       (70, 65, 80, 255),
+    "shoes":       (55, 45, 40, 255),
+    "outline":     (35, 28, 28, 255),
+    "eye":         (28, 28, 35, 255),
+    "mouth_inner": (120, 45, 40, 255),
+    "mouth_line":  (35, 28, 28, 255),
 }
 
 
@@ -222,12 +223,10 @@ def build_custom_palette() -> dict:
     palette = {"name": "Custom"}
     for key in COLOR_KEYS:
         palette[key] = ask_color(f"  {key}", CUSTOM_DEFAULTS[key])
-    # Auto-generate shade/highlight variants for 32x48 3-tone system
+    # Auto-generate shade/highlight variants for 16x16 chibi style
     for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
         palette[f"{base_key}_shade"] = _darken(palette[base_key])
-    palette["skin_dark"] = _darken(palette["skin"], amount=45)
     palette["hair_highlight"] = _lighten(palette["hair"])
-    palette["shirt_highlight"] = _lighten(palette["shirt"])
     return palette
 
 
@@ -241,9 +240,7 @@ def customize_palette(palette: dict) -> dict:
     # Regenerate shade/highlight variants
     for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
         palette[f"{base_key}_shade"] = _darken(palette[base_key])
-    palette["skin_dark"] = _darken(palette["skin"], amount=45)
     palette["hair_highlight"] = _lighten(palette["hair"])
-    palette["shirt_highlight"] = _lighten(palette["shirt"])
     return palette
 
 
