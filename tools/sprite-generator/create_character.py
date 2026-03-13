@@ -106,8 +106,8 @@ import generate_character as gen  # noqa: E402
 
 def run_wizard():
     print("=" * 56)
-    print("  Character Sprite Builder (v4 — 32x48 Chibi Style)")
-    print("  Frame: 32x48px (2x3 tiles on 16px grid)")
+    print("  Character Sprite Builder (v5 — 32x48 Chibi Style)")
+    print("  Frame: 32x48px (1x1.5 tiles on 32px grid)")
     print("  Animations: walk, jump, crouch, interact")
     print("=" * 56)
 
@@ -201,7 +201,7 @@ def run_wizard():
 # Custom palette builder
 # ---------------------------------------------------------------------------
 
-COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "eye_white"]
+COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "eye_white", "mouth"]
 
 CUSTOM_DEFAULTS = {
     "skin":      (210, 180, 150, 255),
@@ -212,6 +212,7 @@ CUSTOM_DEFAULTS = {
     "outline":   (35, 30, 28, 255),
     "eye":       (30, 30, 30, 255),
     "eye_white": (240, 240, 240, 255),
+    "mouth":     (155, 85, 75, 255),
 }
 
 

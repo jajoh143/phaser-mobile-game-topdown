@@ -8,9 +8,11 @@ Generates 32x48 spritesheets with multiple animations:
   - crouch   (4 directions x 4 frames)
   - interact (4 directions x 4 frames)
 
-Characters occupy 2x3 tiles on a 16x16 world grid.
+Characters are 32x48px — 1 tile wide, 1.5 tiles tall on a 32x32 world grid.
+The top half of the sprite (head) extends above the tile collision box.
+
 Style: chibi top-down RPG with rounded heads, dark outlines,
-multi-tone shading, skin-toned arms, diverse hair styles.
+multi-tone shading, skin-toned arms, mouths, diverse hair styles.
 
 Usage:
     python generate_character.py --preset 0 --name player
@@ -21,6 +23,7 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 from PIL import Image
 
@@ -31,6 +34,7 @@ OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated")
 FRAME_W = 32
 FRAME_H = 48
 PADDING = 0
+TILE_SIZE = 32
 
 DIRECTIONS = ["down", "left", "right", "up"]
 FRAMES_PER_DIR = 4
@@ -58,6 +62,7 @@ PRESETS = [
         "outline": (30, 25, 22, 255),
         "eye": (25, 25, 30, 255),
         "eye_white": (240, 240, 240, 255),
+        "mouth": (160, 90, 80, 255),
     },
     {
         "name": "Medium skin, black hair, red shirt",
@@ -77,6 +82,7 @@ PRESETS = [
         "outline": (28, 22, 20, 255),
         "eye": (25, 25, 30, 255),
         "eye_white": (240, 240, 240, 255),
+        "mouth": (140, 75, 65, 255),
     },
     {
         "name": "Dark skin, short dark hair, green shirt",
@@ -96,6 +102,7 @@ PRESETS = [
         "outline": (25, 20, 18, 255),
         "eye": (22, 22, 28, 255),
         "eye_white": (235, 235, 235, 255),
+        "mouth": (110, 60, 45, 255),
     },
     {
         "name": "Dark skin, afro, yellow shirt",
@@ -115,6 +122,7 @@ PRESETS = [
         "outline": (22, 18, 15, 255),
         "eye": (22, 22, 28, 255),
         "eye_white": (232, 232, 232, 255),
+        "mouth": (95, 50, 35, 255),
     },
     {
         "name": "Light skin, blonde hair, purple shirt",
@@ -134,6 +142,7 @@ PRESETS = [
         "outline": (30, 25, 22, 255),
         "eye": (25, 25, 30, 255),
         "eye_white": (240, 240, 240, 255),
+        "mouth": (170, 100, 90, 255),
     },
     {
         "name": "Medium skin, auburn hair, teal shirt",
@@ -153,6 +162,7 @@ PRESETS = [
         "outline": (28, 22, 20, 255),
         "eye": (25, 25, 30, 255),
         "eye_white": (240, 240, 240, 255),
+        "mouth": (155, 85, 72, 255),
     },
     {
         "name": "Medium-dark skin, dark hair, orange shirt",
@@ -172,6 +182,7 @@ PRESETS = [
         "outline": (24, 20, 18, 255),
         "eye": (22, 22, 28, 255),
         "eye_white": (235, 235, 235, 255),
+        "mouth": (128, 68, 48, 255),
     },
     {
         "name": "Light skin, red hair, white shirt",
@@ -191,13 +202,14 @@ PRESETS = [
         "outline": (30, 25, 22, 255),
         "eye": (25, 25, 30, 255),
         "eye_white": (240, 240, 240, 255),
+        "mouth": (175, 105, 95, 255),
     },
 ]
 
 # ---------------------------------------------------------------------------
 # HAIR STYLES — pixel masks for 32x48 head region
 #
-# Head center is roughly x=8..23, y=2..18 (large chibi head).
+# Head center is roughly x=15, y=10 (large chibi head).
 # Each style returns {"down": [...], "up": [...], "left": [...], "right": [...]}
 # where each value is a list of (x, y, shade) tuples.
 # shade: 0 = base hair, 1 = hair_shade (dark), 2 = hair_highlight (light)
@@ -210,11 +222,11 @@ def _hair_row(y, x_start, x_end, shade=0):
 
 def _make_hair_short():
     front = []
-    front += _hair_row(2, 10, 22, 2)   # top highlight
+    front += _hair_row(2, 10, 22, 2)
     front += _hair_row(3, 8, 24, 0)
     front += _hair_row(4, 7, 25, 0)
     front += _hair_row(5, 7, 25, 1)
-    front += [(7, 6, 1), (24, 6, 1)]   # sides
+    front += [(7, 6, 1), (24, 6, 1)]
 
     back = []
     back += _hair_row(2, 10, 22, 1)
@@ -232,7 +244,6 @@ def _make_hair_short():
     left += [(6, 6, 1), (6, 7, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
-
     return {"down": front, "up": back, "left": left, "right": right}
 
 
@@ -242,7 +253,6 @@ def _make_hair_long():
     front += _hair_row(3, 8, 24, 0)
     front += _hair_row(4, 7, 25, 0)
     front += _hair_row(5, 7, 25, 1)
-    # Side drapes down
     for y in range(6, 26):
         front += [(7, y, 1), (24, y, 1)]
     for y in range(6, 22):
@@ -269,7 +279,6 @@ def _make_hair_long():
         left += [(5, y, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
-
     return {"down": front, "up": back, "left": left, "right": right}
 
 
@@ -288,9 +297,7 @@ def _make_hair_afro():
     back = []
     back += _hair_row(0, 11, 21, 1)
     back += _hair_row(1, 8, 24, 1)
-    for y in range(2, 8):
-        back += _hair_row(y, 5, 27, 1)
-    for y in range(8, 14):
+    for y in range(2, 14):
         back += _hair_row(y, 5, 27, 1)
     back += _hair_row(14, 7, 25, 1)
 
@@ -306,7 +313,6 @@ def _make_hair_afro():
         left += [(3, y, 1), (4, y, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
-
     return {"down": front, "up": back, "left": left, "right": right}
 
 
@@ -323,7 +329,6 @@ def _make_hair_ponytail():
     back += _hair_row(3, 8, 24, 0)
     back += _hair_row(4, 7, 25, 0)
     back += _hair_row(5, 7, 25, 1)
-    # Ponytail hanging from center
     for y in range(6, 10):
         back += _hair_row(y, 13, 19, 1)
     for y in range(10, 28):
@@ -338,39 +343,83 @@ def _make_hair_ponytail():
     left += [(6, 6, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
-
     return {"down": front, "up": back, "left": left, "right": right}
 
 
+def _spike_triangle(tip_x, tip_y, base_y, half_width):
+    """Generate pixels for a triangular spike from tip down to base_y."""
+    pixels = []
+    height = base_y - tip_y
+    if height <= 0:
+        return pixels
+    for dy in range(height + 1):
+        y = tip_y + dy
+        progress = dy / height
+        w = max(1, round(half_width * progress))
+        for dx in range(-w, w + 1):
+            pixels.append((tip_x + dx, y))
+    return pixels
+
+
 def _make_hair_spiky():
+    """Spiky hair with sharp triangular points."""
+    # Define spike tips: (tip_x, tip_y, base_y, half_width)
+    spikes_front = [
+        (10, -1, 5, 2),   # left spike
+        (14,  -2, 4, 2),  # left-center spike (tallest)
+        (18,  -1, 4, 2),  # center-right spike
+        (22,  -2, 5, 2),  # right spike (tall)
+        (12,   0, 4, 1),  # small fill spike
+        (20,   0, 4, 1),  # small fill spike
+    ]
+
     front = []
-    # Spikes jutting up
-    front += [(10, 0, 0), (11, 0, 0)]
-    front += [(15, 0, 0), (16, 0, 0)]
-    front += [(20, 0, 0), (21, 0, 0)]
-    front += [(12, 1, 0), (13, 1, 0), (17, 1, 0), (18, 1, 0)]
-    front += _hair_row(1, 9, 23, 0)
-    front += _hair_row(2, 8, 24, 0)
-    front += _hair_row(3, 8, 24, 0)
-    front += _hair_row(4, 7, 25, 1)
+    for tx, ty, by, hw in spikes_front:
+        for x, y in _spike_triangle(tx, ty, by, hw):
+            if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
+                shade = 2 if y <= ty + 1 else (0 if y <= by - 2 else 1)
+                front.append((x, y, shade))
+    # Base hair mass
+    front += _hair_row(4, 7, 25, 0)
     front += _hair_row(5, 7, 25, 1)
     front += [(7, 6, 1), (24, 6, 1)]
 
-    back = list(front)
-    back += _hair_row(6, 8, 24, 1)
-    back += _hair_row(7, 9, 23, 1)
+    spikes_back = [
+        (10, -1, 5, 2),
+        (14, -2, 4, 2),
+        (18, -1, 4, 2),
+        (22, -2, 5, 2),
+        (12,  0, 4, 1),
+        (20,  0, 4, 1),
+    ]
+    back = []
+    for tx, ty, by, hw in spikes_back:
+        for x, y in _spike_triangle(tx, ty, by, hw):
+            if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
+                back.append((x, y, 1))
+    back += _hair_row(4, 7, 25, 1)
+    back += _hair_row(5, 7, 25, 1)
+    back += _hair_row(6, 7, 25, 1)
+    back += _hair_row(7, 8, 24, 1)
 
+    spikes_left = [
+        (8,  -1, 5, 2),
+        (12, -2, 4, 2),
+        (16, -1, 4, 2),
+        (19, -2, 5, 1),
+        (10,  0, 4, 1),
+    ]
     left = []
-    left += [(9, 0, 0), (10, 0, 0), (14, 0, 0), (15, 0, 0), (19, 0, 0)]
-    left += _hair_row(1, 7, 20, 0)
-    left += _hair_row(2, 6, 21, 0)
-    left += _hair_row(3, 6, 21, 0)
-    left += _hair_row(4, 6, 21, 1)
+    for tx, ty, by, hw in spikes_left:
+        for x, y in _spike_triangle(tx, ty, by, hw):
+            if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
+                shade = 2 if y <= ty + 1 else (0 if y <= by - 2 else 1)
+                left.append((x, y, shade))
+    left += _hair_row(4, 6, 21, 0)
     left += _hair_row(5, 6, 21, 1)
     left += [(6, 6, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
-
     return {"down": front, "up": back, "left": left, "right": right}
 
 
@@ -389,20 +438,21 @@ DEFAULT_HAIR = ["short", "short", "short", "afro", "long", "ponytail", "spiky", 
 # BODY TEMPLATES — 32x48 pixel art
 #
 # Coordinate system:
-#   Head:  y  2-18  (large chibi head, ~17px tall)
-#   Neck:  y 19-20
-#   Torso: y 21-32  (shirt + arms)
-#   Legs:  y 33-42  (pants)
-#   Feet:  y 43-47  (shoes)
+#   Head:     y  2-18  (large chibi head, ~17px tall)
+#   Neck:     y 19-20
+#   Torso:    y 21-32  (shirt + arms)
+#   Arms:     y 21-31  (skin-toned, extend alongside torso)
+#   Legs:     y 33-42  (pants)
+#   Feet:     y 43-47  (shoes)
 #
-# Arms use skin/skin_shade colors for visible walking motion.
+# Arms are LONGER than before — they extend from shoulders (y=21)
+# down to y=31, giving clear swing during walk and big reach for interact.
 # ---------------------------------------------------------------------------
 
 def _oval_outline(cx, cy, rx, ry):
-    """Generate pixel positions for an oval outline (Bresenham-ish)."""
+    """Generate pixel positions for an oval outline."""
     points = set()
     for angle_step in range(360):
-        import math
         a = math.radians(angle_step)
         x = round(cx + rx * math.cos(a))
         y = round(cy + ry * math.sin(a))
@@ -422,101 +472,132 @@ def _filled_oval(cx, cy, rx, ry):
     return points
 
 
-def _build_body_down():
-    """Facing down (toward camera) — 32x48."""
+def _build_head_pixels(cx, cy, rx, ry, facing):
+    """Build head pixels with shading based on facing direction."""
     pixels = []
-
-    # --- Head (oval, centered at x=15, y=10) ---
-    head_cx, head_cy = 15, 10
-    head_rx, head_ry = 8, 8
-
-    # Head outline
-    outline_pts = set(_oval_outline(head_cx, head_cy, head_rx, head_ry))
-    fill_pts = set((x, y) for x, y in _filled_oval(head_cx, head_cy, head_rx, head_ry))
+    outline_pts = set(_oval_outline(cx, cy, rx, ry))
+    fill_pts = set((x, y) for x, y in _filled_oval(cx, cy, rx, ry))
     inner_pts = fill_pts - outline_pts
 
     for x, y in outline_pts:
         if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
             pixels.append((x, y, "outline"))
+
     for x, y in inner_pts:
         if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
-            # Shading: bottom portion of face is darker
-            if y >= head_cy + 4:
-                pixels.append((x, y, "skin_shade"))
-            elif y >= head_cy + 2:
-                pixels.append((x, y, "skin"))
-            else:
-                pixels.append((x, y, "skin"))
+            if facing == "down":
+                if y >= cy + 4:
+                    pixels.append((x, y, "skin_shade"))
+                else:
+                    pixels.append((x, y, "skin"))
+            elif facing == "up":
+                if y >= cy + 3:
+                    pixels.append((x, y, "skin_dark"))
+                else:
+                    pixels.append((x, y, "skin_shade"))
+            elif facing == "left":
+                if x >= cx + 3 or y >= cy + 4:
+                    pixels.append((x, y, "skin_shade"))
+                else:
+                    pixels.append((x, y, "skin"))
+            else:  # right — mirror of left
+                if x <= cx - 3 or y >= cy + 4:
+                    pixels.append((x, y, "skin_shade"))
+                else:
+                    pixels.append((x, y, "skin"))
 
-    # Eyes (y=11, roughly 1/3 from center each side)
+    return pixels
+
+
+def _build_body_down():
+    """Facing down (toward camera) — 32x48."""
+    pixels = []
+    head_cx, head_cy = 15, 10
+
+    # --- Head ---
+    pixels += _build_head_pixels(head_cx, head_cy, 8, 8, "down")
+
+    # Eyes (y=11)
     eye_y = 11
-    # Left eye
-    pixels.append((11, eye_y, "eye_white"))
-    pixels.append((12, eye_y, "eye_white"))
-    pixels.append((13, eye_y, "eye"))
-    pixels.append((11, eye_y + 1, "eye_white"))
-    pixels.append((12, eye_y + 1, "eye"))
-    pixels.append((13, eye_y + 1, "outline"))
-    # Right eye
-    pixels.append((17, eye_y, "eye_white"))
-    pixels.append((18, eye_y, "eye_white"))
-    pixels.append((19, eye_y, "eye"))
-    pixels.append((17, eye_y + 1, "eye_white"))
-    pixels.append((18, eye_y + 1, "eye"))
-    pixels.append((19, eye_y + 1, "outline"))
+    for ex, ey, c in [
+        (11, eye_y, "eye_white"), (12, eye_y, "eye_white"), (13, eye_y, "eye"),
+        (11, eye_y+1, "eye_white"), (12, eye_y+1, "eye"), (13, eye_y+1, "outline"),
+        (17, eye_y, "eye_white"), (18, eye_y, "eye_white"), (19, eye_y, "eye"),
+        (17, eye_y+1, "eye_white"), (18, eye_y+1, "eye"), (19, eye_y+1, "outline"),
+    ]:
+        pixels.append((ex, ey, c))
+
+    # Mouth (small, centered, y=15)
+    pixels.append((14, 15, "mouth"))
+    pixels.append((15, 15, "mouth"))
+    pixels.append((16, 15, "mouth"))
+    pixels.append((14, 16, "outline"))
+    pixels.append((15, 16, "skin_shade"))
+    pixels.append((16, 16, "outline"))
 
     # --- Neck ---
     for y in range(19, 21):
+        pixels.append((12, y, "outline"))
         for x in range(13, 18):
             pixels.append((x, y, "skin_shade"))
-        pixels.append((12, y, "outline"))
         pixels.append((18, y, "outline"))
 
-    # --- Torso / Shirt ---
-    # Row 21-22: shoulders widen
+    # --- Torso + Arms (y=21-32) ---
+    # Row 21-22: shoulders
     for y in [21, 22]:
         pixels.append((8, y, "outline"))
         for x in range(9, 12):
-            pixels.append((x, y, "skin"))      # left arm
+            pixels.append((x, y, "skin"))
         for x in range(12, 20):
             pixels.append((x, y, "shirt_highlight" if y == 21 else "shirt"))
         for x in range(20, 23):
-            pixels.append((x, y, "skin"))      # right arm
+            pixels.append((x, y, "skin"))
         pixels.append((23, y, "outline"))
 
-    # Row 23-26: full torso + arms
-    for y in range(23, 27):
+    # Row 23-27: upper arm + torso
+    for y in range(23, 28):
         pixels.append((7, y, "outline"))
         for x in range(8, 11):
-            pixels.append((x, y, "skin" if y < 25 else "skin_shade"))  # left arm
+            pixels.append((x, y, "skin" if y < 26 else "skin_shade"))
         pixels.append((11, y, "outline"))
         for x in range(12, 20):
-            c = "shirt" if y < 25 else "shirt_shade"
+            c = "shirt" if y < 26 else "shirt_shade"
             pixels.append((x, y, c))
         pixels.append((20, y, "outline"))
         for x in range(21, 24):
-            pixels.append((x, y, "skin" if y < 25 else "skin_shade"))  # right arm
+            pixels.append((x, y, "skin" if y < 26 else "skin_shade"))
         pixels.append((24, y, "outline"))
 
-    # Row 27-28: arm ends (hands) + lower shirt
-    for y in [27, 28]:
-        pixels.append((8, y, "outline"))
+    # Row 28-30: forearm (narrower) + lower torso
+    for y in range(28, 31):
+        pixels.append((7, y, "outline"))
+        pixels.append((8, y, "skin_shade"))
         pixels.append((9, y, "skin_shade"))
         pixels.append((10, y, "outline"))
         for x in range(11, 21):
             pixels.append((x, y, "shirt_shade"))
         pixels.append((21, y, "outline"))
         pixels.append((22, y, "skin_shade"))
-        pixels.append((23, y, "outline"))
+        pixels.append((23, y, "skin_shade"))
+        pixels.append((24, y, "outline"))
 
-    # Row 29-32: lower shirt / belt
-    for y in range(29, 33):
-        pixels.append((10, y, "outline"))
-        for x in range(11, 21):
-            pixels.append((x, y, "shirt_shade"))
-        pixels.append((21, y, "outline"))
+    # Row 31: hand tips
+    pixels.append((7, 31, "outline"))
+    pixels.append((8, 31, "skin_dark"))
+    pixels.append((9, 31, "outline"))
+    for x in range(10, 22):
+        pixels.append((x, 31, "shirt_shade"))
+    pixels.append((22, 31, "outline"))
+    pixels.append((23, 31, "skin_dark"))
+    pixels.append((24, 31, "outline"))
 
-    # --- Legs / Pants ---
+    # Row 32: waistline
+    pixels.append((10, 32, "outline"))
+    for x in range(11, 21):
+        pixels.append((x, 32, "shirt_shade"))
+    pixels.append((21, 32, "outline"))
+
+    # --- Legs ---
     for y in range(33, 38):
         pixels.append((10, y, "outline"))
         for x in range(11, 15):
@@ -527,7 +608,6 @@ def _build_body_down():
             pixels.append((x, y, "pants"))
         pixels.append((21, y, "outline"))
 
-    # Lower legs
     for y in range(38, 43):
         pixels.append((10, y, "outline"))
         for x in range(11, 15):
@@ -538,7 +618,7 @@ def _build_body_down():
             pixels.append((x, y, "pants_shade"))
         pixels.append((21, y, "outline"))
 
-    # --- Feet / Shoes ---
+    # --- Feet ---
     for y in range(43, 46):
         pixels.append((9, y, "outline"))
         for x in range(10, 15):
@@ -548,10 +628,7 @@ def _build_body_down():
         for x in range(17, 22):
             pixels.append((x, y, "shoes" if y < 45 else "shoes_shade"))
         pixels.append((22, y, "outline"))
-    # Bottom outline
-    for x in range(9, 16):
-        pixels.append((x, 46, "outline"))
-    for x in range(16, 23):
+    for x in range(9, 23):
         pixels.append((x, 46, "outline"))
 
     return pixels
@@ -560,35 +637,19 @@ def _build_body_down():
 def _build_body_up():
     """Facing up (away from camera) — 32x48."""
     pixels = []
-
-    # --- Head (back of head — all skin_shade, no eyes) ---
     head_cx, head_cy = 15, 10
-    head_rx, head_ry = 8, 8
 
-    outline_pts = set(_oval_outline(head_cx, head_cy, head_rx, head_ry))
-    fill_pts = set((x, y) for x, y in _filled_oval(head_cx, head_cy, head_rx, head_ry))
-    inner_pts = fill_pts - outline_pts
-
-    for x, y in outline_pts:
-        if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
-            pixels.append((x, y, "outline"))
-    for x, y in inner_pts:
-        if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
-            if y >= head_cy + 3:
-                pixels.append((x, y, "skin_dark"))
-            elif y >= head_cy:
-                pixels.append((x, y, "skin_shade"))
-            else:
-                pixels.append((x, y, "skin_shade"))
+    # --- Head (back, no eyes, no mouth) ---
+    pixels += _build_head_pixels(head_cx, head_cy, 8, 8, "up")
 
     # --- Neck ---
     for y in range(19, 21):
+        pixels.append((12, y, "outline"))
         for x in range(13, 18):
             pixels.append((x, y, "skin_dark"))
-        pixels.append((12, y, "outline"))
         pixels.append((18, y, "outline"))
 
-    # --- Torso (back view, slightly darker) ---
+    # --- Torso (back view) ---
     for y in [21, 22]:
         pixels.append((8, y, "outline"))
         for x in range(9, 12):
@@ -599,7 +660,7 @@ def _build_body_up():
             pixels.append((x, y, "skin_shade"))
         pixels.append((23, y, "outline"))
 
-    for y in range(23, 27):
+    for y in range(23, 28):
         pixels.append((7, y, "outline"))
         for x in range(8, 11):
             pixels.append((x, y, "skin_shade"))
@@ -611,34 +672,34 @@ def _build_body_up():
             pixels.append((x, y, "skin_shade"))
         pixels.append((24, y, "outline"))
 
-    for y in [27, 28]:
-        pixels.append((8, y, "outline"))
+    for y in range(28, 31):
+        pixels.append((7, y, "outline"))
+        pixels.append((8, y, "skin_dark"))
         pixels.append((9, y, "skin_dark"))
         pixels.append((10, y, "outline"))
         for x in range(11, 21):
             pixels.append((x, y, "shirt_shade"))
         pixels.append((21, y, "outline"))
         pixels.append((22, y, "skin_dark"))
-        pixels.append((23, y, "outline"))
+        pixels.append((23, y, "skin_dark"))
+        pixels.append((24, y, "outline"))
 
-    for y in range(29, 33):
-        pixels.append((10, y, "outline"))
-        for x in range(11, 21):
-            pixels.append((x, y, "shirt_shade"))
-        pixels.append((21, y, "outline"))
+    pixels.append((7, 31, "outline"))
+    pixels.append((8, 31, "skin_dark"))
+    pixels.append((9, 31, "outline"))
+    for x in range(10, 22):
+        pixels.append((x, 31, "shirt_shade"))
+    pixels.append((22, 31, "outline"))
+    pixels.append((23, 31, "skin_dark"))
+    pixels.append((24, 31, "outline"))
+
+    pixels.append((10, 32, "outline"))
+    for x in range(11, 21):
+        pixels.append((x, 32, "shirt_shade"))
+    pixels.append((21, 32, "outline"))
 
     # --- Legs ---
-    for y in range(33, 38):
-        pixels.append((10, y, "outline"))
-        for x in range(11, 15):
-            pixels.append((x, y, "pants_shade"))
-        pixels.append((15, y, "outline"))
-        pixels.append((16, y, "outline"))
-        for x in range(17, 21):
-            pixels.append((x, y, "pants_shade"))
-        pixels.append((21, y, "outline"))
-
-    for y in range(38, 43):
+    for y in range(33, 43):
         pixels.append((10, y, "outline"))
         for x in range(11, 15):
             pixels.append((x, y, "pants_shade"))
@@ -658,9 +719,7 @@ def _build_body_up():
         for x in range(17, 22):
             pixels.append((x, y, "shoes_shade"))
         pixels.append((22, y, "outline"))
-    for x in range(9, 16):
-        pixels.append((x, 46, "outline"))
-    for x in range(16, 23):
+    for x in range(9, 23):
         pixels.append((x, 46, "outline"))
 
     return pixels
@@ -669,28 +728,12 @@ def _build_body_up():
 def _build_body_left():
     """Facing left — side profile, 32x48."""
     pixels = []
-
-    # --- Head (side, shifted left, slightly narrower) ---
     head_cx, head_cy = 14, 10
-    head_rx, head_ry = 7, 8
 
-    outline_pts = set(_oval_outline(head_cx, head_cy, head_rx, head_ry))
-    fill_pts = set((x, y) for x, y in _filled_oval(head_cx, head_cy, head_rx, head_ry))
-    inner_pts = fill_pts - outline_pts
+    # --- Head (side) ---
+    pixels += _build_head_pixels(head_cx, head_cy, 7, 8, "left")
 
-    for x, y in outline_pts:
-        if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
-            pixels.append((x, y, "outline"))
-    for x, y in inner_pts:
-        if 0 <= x < FRAME_W and 0 <= y < FRAME_H:
-            if x >= head_cx + 3:
-                pixels.append((x, y, "skin_shade"))
-            elif y >= head_cy + 4:
-                pixels.append((x, y, "skin_shade"))
-            else:
-                pixels.append((x, y, "skin"))
-
-    # Eye (only one visible from side)
+    # Eye (one visible)
     pixels.append((10, 11, "eye_white"))
     pixels.append((11, 11, "eye_white"))
     pixels.append((12, 11, "eye"))
@@ -698,54 +741,70 @@ def _build_body_left():
     pixels.append((11, 12, "eye"))
     pixels.append((12, 12, "outline"))
 
+    # Mouth (side — smaller, shifted left)
+    pixels.append((10, 15, "mouth"))
+    pixels.append((11, 15, "mouth"))
+    pixels.append((10, 16, "outline"))
+    pixels.append((11, 16, "outline"))
+
     # --- Neck ---
     for y in range(19, 21):
+        pixels.append((11, y, "outline"))
         for x in range(12, 17):
             pixels.append((x, y, "skin_shade"))
-        pixels.append((11, y, "outline"))
         pixels.append((17, y, "outline"))
 
-    # --- Torso (side, narrower) ---
+    # --- Torso (side) + Arms ---
     for y in [21, 22]:
         pixels.append((7, y, "outline"))
         for x in range(8, 11):
-            pixels.append((x, y, "skin"))       # front arm
+            pixels.append((x, y, "skin"))
         for x in range(11, 19):
             pixels.append((x, y, "shirt" if y == 21 else "shirt_shade"))
         for x in range(19, 22):
-            pixels.append((x, y, "skin_shade"))  # back arm
+            pixels.append((x, y, "skin_shade"))
         pixels.append((22, y, "outline"))
 
-    for y in range(23, 27):
+    for y in range(23, 28):
         pixels.append((6, y, "outline"))
         for x in range(7, 10):
-            pixels.append((x, y, "skin" if y < 25 else "skin_shade"))
+            pixels.append((x, y, "skin" if y < 26 else "skin_shade"))
         pixels.append((10, y, "outline"))
         for x in range(11, 19):
-            c = "shirt" if y < 25 else "shirt_shade"
+            c = "shirt" if y < 26 else "shirt_shade"
             pixels.append((x, y, c))
         pixels.append((19, y, "outline"))
         for x in range(20, 23):
             pixels.append((x, y, "skin_shade"))
         pixels.append((23, y, "outline"))
 
-    for y in [27, 28]:
-        pixels.append((7, y, "outline"))
+    for y in range(28, 31):
+        pixels.append((6, y, "outline"))
+        pixels.append((7, y, "skin_shade"))
         pixels.append((8, y, "skin_shade"))
         pixels.append((9, y, "outline"))
         for x in range(10, 20):
             pixels.append((x, y, "shirt_shade"))
         pixels.append((20, y, "outline"))
         pixels.append((21, y, "skin_dark"))
-        pixels.append((22, y, "outline"))
+        pixels.append((22, y, "skin_dark"))
+        pixels.append((23, y, "outline"))
 
-    for y in range(29, 33):
-        pixels.append((9, y, "outline"))
-        for x in range(10, 20):
-            pixels.append((x, y, "shirt_shade"))
-        pixels.append((20, y, "outline"))
+    pixels.append((6, 31, "outline"))
+    pixels.append((7, 31, "skin_dark"))
+    pixels.append((8, 31, "outline"))
+    for x in range(9, 21):
+        pixels.append((x, 31, "shirt_shade"))
+    pixels.append((21, 31, "outline"))
+    pixels.append((22, 31, "skin_dark"))
+    pixels.append((23, 31, "outline"))
 
-    # --- Legs (side — single column, overlapping) ---
+    pixels.append((9, 32, "outline"))
+    for x in range(10, 20):
+        pixels.append((x, 32, "shirt_shade"))
+    pixels.append((20, 32, "outline"))
+
+    # --- Legs (side) ---
     for y in range(33, 38):
         pixels.append((9, y, "outline"))
         for x in range(10, 15):
@@ -801,7 +860,6 @@ def _region_for_pixel(x, y, direction):
     if y <= 20:
         return "torso"  # neck moves with torso
     if y <= 32:
-        # Arm detection
         if direction in ("down", "up"):
             if x <= 11:
                 return "arm_l"
@@ -830,6 +888,8 @@ def _region_for_pixel(x, y, direction):
 
 # ---------------------------------------------------------------------------
 # ANIMATION OFFSET TABLES — 32x48
+#
+# Longer arms means bigger swing for walk and much bigger reach for interact.
 # ---------------------------------------------------------------------------
 
 ANIM_OFFSETS = {
@@ -837,32 +897,32 @@ ANIM_OFFSETS = {
         "down": {
             "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
             "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-            "arm_l": [(0, 0), (0, -2), (0, 0), (0, 2)],
-            "arm_r": [(0, 0), (0, 2),  (0, 0), (0, -2)],
+            "arm_l": [(0, 0), (0, -3), (0, 0), (0, 3)],
+            "arm_r": [(0, 0), (0, 3),  (0, 0), (0, -3)],
             "leg_l": [(0, 0), (0, 2),  (0, 0), (0, -2)],
             "leg_r": [(0, 0), (0, -2), (0, 0), (0, 2)],
         },
         "up": {
             "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
             "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-            "arm_l": [(0, 0), (0, -2), (0, 0), (0, 2)],
-            "arm_r": [(0, 0), (0, 2),  (0, 0), (0, -2)],
+            "arm_l": [(0, 0), (0, -3), (0, 0), (0, 3)],
+            "arm_r": [(0, 0), (0, 3),  (0, 0), (0, -3)],
             "leg_l": [(0, 0), (0, 2),  (0, 0), (0, -2)],
             "leg_r": [(0, 0), (0, -2), (0, 0), (0, 2)],
         },
         "left": {
             "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
             "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-            "arm_l": [(0, 0), (0, 2),  (0, 0), (0, -2)],
-            "arm_r": [(0, 0), (0, -2), (0, 0), (0, 2)],
+            "arm_l": [(0, 0), (0, 3),  (0, 0), (0, -3)],
+            "arm_r": [(0, 0), (0, -3), (0, 0), (0, 3)],
             "leg_l": [(0, 0), (0, 2),  (0, 0), (0, -2)],
             "leg_r": [(0, 0), (0, -2), (0, 0), (0, 2)],
         },
         "right": {
             "head":  [(0, 0), (0, -1), (0, 0), (0, -1)],
             "torso": [(0, 0), (0, 0),  (0, 0), (0, 0)],
-            "arm_l": [(0, 0), (0, -2), (0, 0), (0, 2)],
-            "arm_r": [(0, 0), (0, 2),  (0, 0), (0, -2)],
+            "arm_l": [(0, 0), (0, -3), (0, 0), (0, 3)],
+            "arm_r": [(0, 0), (0, 3),  (0, 0), (0, -3)],
             "leg_l": [(0, 0), (0, 2),  (0, 0), (0, -2)],
             "leg_r": [(0, 0), (0, -2), (0, 0), (0, 2)],
         },
@@ -938,12 +998,14 @@ ANIM_OFFSETS = {
         },
     },
 
+    # Interact: the leading arm reaches OUT from the body and UP.
+    # Longer arms make this a dramatic, clear gesture.
     "interact": {
         "down": {
             "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
-            "arm_r": [(0, 0), (2, -2), (3, -4), (2, -2)],
+            "arm_r": [(0, 0), (3, -3), (5, -6), (3, -3)],
             "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
         },
@@ -951,14 +1013,14 @@ ANIM_OFFSETS = {
             "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
-            "arm_r": [(0, 0), (2, -2), (3, -4), (2, -2)],
+            "arm_r": [(0, 0), (3, -3), (5, -6), (3, -3)],
             "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
         },
         "left": {
             "head":  [(0, 0), (0, 0),   (0, 0),   (0, 0)],
             "torso": [(0, 0), (0, 0),   (0, 0),   (0, 0)],
-            "arm_l": [(0, 0), (-2, -2), (-3, -4), (-2, -2)],
+            "arm_l": [(0, 0), (-3, -3), (-5, -6), (-3, -3)],
             "arm_r": [(0, 0), (0, 0),   (0, 0),   (0, 0)],
             "leg_l": [(0, 0), (0, 0),   (0, 0),   (0, 0)],
             "leg_r": [(0, 0), (0, 0),   (0, 0),   (0, 0)],
@@ -967,7 +1029,7 @@ ANIM_OFFSETS = {
             "head":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "torso": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "arm_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
-            "arm_r": [(0, 0), (2, -2), (3, -4), (2, -2)],
+            "arm_r": [(0, 0), (3, -3), (5, -6), (3, -3)],
             "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
         },
@@ -1052,20 +1114,20 @@ def build_atlas(sprite_name: str, image_file: str, frames_meta: dict, sheet_size
         "animations": anim_groups,
         "meta": {
             "app": "sprite-generator",
-            "version": "4.0",
+            "version": "5.0",
             "image": image_file,
             "format": "RGBA8888",
             "size": {"w": sheet_size[0], "h": sheet_size[1]},
             "scale": "1",
             "frameSize": {"w": FRAME_W, "h": FRAME_H},
-            "tileSize": 16,
-            "spriteTiles": {"w": 2, "h": 3},
+            "tileSize": TILE_SIZE,
+            "spriteTiles": {"w": 1, "h": 1.5},
         },
     }
 
 
 def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> str:
-    """Generate a standalone HTML preview with animation + direction controls."""
+    """Generate a standalone HTML preview."""
     animations_json = json.dumps(ANIMATIONS)
     directions_json = json.dumps(DIRECTIONS)
     return f"""<!DOCTYPE html>
@@ -1122,7 +1184,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v4 — 32x48 chibi (2x3 tiles) — walk / jump / crouch / interact</p>
+<p class="info">v5 — 32x48 chibi (1x1.5 tiles on 32px grid) — walk / jump / crouch / interact</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
@@ -1224,7 +1286,7 @@ def main():
             print(f"  {i}: {p['name']}  (default hair: {hair})")
         print(f"\nHair styles:  {', '.join(HAIR_STYLES.keys())}")
         print(f"Animations:   {', '.join(ANIMATIONS)}")
-        print(f"Frame size:   {FRAME_W}x{FRAME_H}px (2x3 tiles on 16px grid)")
+        print(f"Frame size:   {FRAME_W}x{FRAME_H}px (1x1.5 tiles on {TILE_SIZE}px grid)")
         return
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -1271,7 +1333,7 @@ def _generate_one(sprite_name: str, palette: dict, hair_style: str, preset_idx: 
     print(f"  Style:       {palette['name']} | hair: {hair_style}")
     print(f"  Animations:  {', '.join(ANIMATIONS)}")
     print(f"  Frames:      {total_frames} ({len(ANIMATIONS)} anims x {len(DIRECTIONS)} dirs x {FRAMES_PER_DIR} frames)")
-    print(f"  Frame size:  {FRAME_W}x{FRAME_H}px (2x3 tiles)\n")
+    print(f"  Frame size:  {FRAME_W}x{FRAME_H}px (1x1.5 tiles on {TILE_SIZE}px grid)\n")
 
 
 if __name__ == "__main__":
