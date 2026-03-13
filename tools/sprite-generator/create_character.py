@@ -10,6 +10,7 @@ Run:
 import os
 import sys
 import re
+import json
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -72,6 +73,16 @@ def ask_yes_no(prompt: str, default: bool = True) -> bool:
     return raw in ("y", "yes")
 
 
+def _darken(color: tuple[int, int, int, int], amount: int = 30) -> tuple[int, int, int, int]:
+    """Create a darker shade of a color."""
+    return (
+        max(0, color[0] - amount),
+        max(0, color[1] - amount),
+        max(0, color[2] - amount),
+        255,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Import the generator (sibling module)
 # ---------------------------------------------------------------------------
@@ -85,42 +96,42 @@ import generate_character as gen  # noqa: E402
 
 def run_wizard():
     print("=" * 52)
-    print("  Character Sprite Builder")
+    print("  Character Sprite Builder (v2 — Pixel Art Style)")
     print("=" * 52)
 
     # --- Step 1: Name ---
     print("\n--- Step 1: Character Name ---")
     name = ask("Character name (used in filenames)", default="player")
-    # Sanitize to safe filename chars
     name = re.sub(r"[^a-zA-Z0-9_-]", "_", name).lower()
 
-    # --- Step 2: Palette ---
-    print("\n--- Step 2: Color Palette ---")
-    palette_keys = list(gen.PALETTES.keys()) + ["custom"]
-    palette_labels = []
-    for k in palette_keys:
-        if k == "custom":
-            palette_labels.append("Custom — pick every color yourself")
-        else:
-            palette_labels.append(f"{k} — {gen.PALETTES[k]['name']}")
+    # --- Step 2: Preset ---
+    print("\n--- Step 2: Color Preset ---")
+    preset_labels = [f"{i}: {p['name']}" for i, p in enumerate(gen.PRESETS)]
+    preset_labels.append("Custom — pick every color yourself")
 
-    choice = ask_choice("Choose a color palette:", palette_labels, default=0)
+    choice = ask_choice("Choose a color preset:", preset_labels, default=0)
 
-    if palette_keys[choice] == "custom":
+    if choice == len(gen.PRESETS):
         palette = build_custom_palette()
-        palette_tag = "custom"
+        preset_tag = "custom"
     else:
-        palette_tag = palette_keys[choice]
-        palette = dict(gen.PALETTES[palette_tag])  # shallow copy
+        preset_tag = f"preset{choice}"
+        palette = dict(gen.PRESETS[choice])
 
-        # Offer to tweak individual colors
         if ask_yes_no("\nWould you like to customize individual colors?", default=False):
             palette = customize_palette(palette)
 
-    # --- Step 3: Body proportions ---
-    print("\n--- Step 3: Body Proportions ---")
-    if ask_yes_no("Would you like to adjust body part sizes?", default=False):
-        customize_body_parts()
+    # --- Step 3: Hair Style ---
+    print("\n--- Step 3: Hair Style ---")
+    hair_labels = list(gen.HAIR_STYLES.keys())
+    default_hair_idx = 0
+    if choice < len(gen.DEFAULT_HAIR):
+        default_hair_name = gen.DEFAULT_HAIR[choice]
+        if default_hair_name in hair_labels:
+            default_hair_idx = hair_labels.index(default_hair_name)
+
+    hair_choice = ask_choice("Choose a hair style:", hair_labels, default=default_hair_idx)
+    hair_style = hair_labels[hair_choice]
 
     # --- Step 4: Output ---
     print("\n--- Step 4: Output ---")
@@ -131,9 +142,10 @@ def run_wizard():
     print("\n" + "=" * 52)
     print("  Summary")
     print("=" * 52)
-    print(f"  Name:     {name}")
-    print(f"  Palette:  {palette_tag}")
-    print(f"  Output:   {output_dir}")
+    print(f"  Name:       {name}")
+    print(f"  Preset:     {preset_tag}")
+    print(f"  Hair:       {hair_style}")
+    print(f"  Output:     {output_dir}")
     print()
 
     if not ask_yes_no("Generate sprite?", default=True):
@@ -143,13 +155,11 @@ def run_wizard():
     # --- Generate ---
     print("\nGenerating...")
 
-    sheet_img, frames_meta = gen.build_spritesheet(palette)
+    sheet_img, frames_meta = gen.build_spritesheet(palette, hair_style)
 
-    image_file = f"{name}_{palette_tag}.png"
-    atlas_file = f"{name}_{palette_tag}.json"
-    preview_file = f"{name}_{palette_tag}_preview.html"
-
-    import json
+    image_file = f"{name}_{preset_tag}.png"
+    atlas_file = f"{name}_{preset_tag}.json"
+    preview_file = f"{name}_{preset_tag}_preview.html"
 
     # Save spritesheet
     sheet_path = os.path.join(output_dir, image_file)
@@ -177,17 +187,17 @@ def run_wizard():
 # Custom palette builder
 # ---------------------------------------------------------------------------
 
-COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye"]
+COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "eye_white"]
 
-# Sensible starting defaults for custom palette
 CUSTOM_DEFAULTS = {
-    "skin":    (210, 180, 150, 255),
-    "hair":    (60, 45, 30, 255),
-    "shirt":   (100, 115, 130, 255),
-    "pants":   (65, 65, 75, 255),
-    "shoes":   (50, 42, 38, 255),
-    "outline": (35, 30, 28, 255),
-    "eye":     (30, 30, 30, 255),
+    "skin":      (210, 180, 150, 255),
+    "hair":      (60, 45, 30, 255),
+    "shirt":     (100, 115, 130, 255),
+    "pants":     (65, 65, 75, 255),
+    "shoes":     (50, 42, 38, 255),
+    "outline":   (35, 30, 28, 255),
+    "eye":       (30, 30, 30, 255),
+    "eye_white": (240, 240, 240, 255),
 }
 
 
@@ -197,6 +207,9 @@ def build_custom_palette() -> dict:
     palette = {"name": "Custom"}
     for key in COLOR_KEYS:
         palette[key] = ask_color(f"  {key}", CUSTOM_DEFAULTS[key])
+    # Auto-generate shade variants
+    for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
+        palette[f"{base_key}_shade"] = _darken(palette[base_key])
     return palette
 
 
@@ -205,46 +218,12 @@ def customize_palette(palette: dict) -> dict:
     print("\nPress Enter to keep current value, or type a new color.")
     for key in COLOR_KEYS:
         current = palette.get(key, CUSTOM_DEFAULTS[key])
-        palette[key] = ask_color(f"  {key}", current)
+        new_color = ask_color(f"  {key}", current)
+        palette[key] = new_color
+    # Regenerate shades from updated base colors
+    for base_key in ["skin", "hair", "shirt", "pants", "shoes"]:
+        palette[f"{base_key}_shade"] = _darken(palette[base_key])
     return palette
-
-
-# ---------------------------------------------------------------------------
-# Body part customization
-# ---------------------------------------------------------------------------
-
-PART_NAMES = ["head", "hair", "torso", "arm_l", "arm_r", "leg_l", "leg_r", "foot_l", "foot_r"]
-
-
-def customize_body_parts():
-    """Let the user tweak body part rects."""
-    print("\nCurrent body part dimensions (x, y, width, height):")
-    for i, name in enumerate(PART_NAMES):
-        rect = gen.BODY_PARTS[name]["rect"]
-        print(f"  {i + 1}) {name:8s}  x={rect[0]:2d}  y={rect[1]:2d}  w={rect[2]:2d}  h={rect[3]:2d}")
-
-    print("\nEnter a part number to edit, or press Enter to continue.")
-    while True:
-        raw = input("Part # (or Enter to finish): ").strip()
-        if not raw:
-            break
-        if raw.isdigit() and 1 <= int(raw) <= len(PART_NAMES):
-            idx = int(raw) - 1
-            part_name = PART_NAMES[idx]
-            rect = gen.BODY_PARTS[part_name]["rect"]
-            print(f"\n  Editing {part_name}: current rect = ({rect[0]}, {rect[1]}, {rect[2]}, {rect[3]})")
-            print("  Enter new values as: x, y, w, h")
-            vals = input(f"  [{rect[0]}, {rect[1]}, {rect[2]}, {rect[3]}]: ").strip()
-            if vals:
-                parts = [p.strip() for p in vals.split(",")]
-                if len(parts) == 4 and all(p.isdigit() for p in parts):
-                    new_rect = tuple(int(p) for p in parts)
-                    gen.BODY_PARTS[part_name]["rect"] = new_rect
-                    print(f"  Updated {part_name} to {new_rect}")
-                else:
-                    print("  Invalid input, keeping current value.")
-        else:
-            print(f"  Enter a number between 1 and {len(PART_NAMES)}.")
 
 
 # ---------------------------------------------------------------------------
