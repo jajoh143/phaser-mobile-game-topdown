@@ -4,7 +4,8 @@ Top-down chibi character sprite generator for Phaser 3.
 
 Generates 16x16 spritesheets matching the classic top-heavy chibi style:
   - Giant head (~70% of sprite) with open mouth and dot eyes
-  - Tiny blob body with no visible arms at rest
+  - Tiny blob body with shoulder-pivot arms
+  - Arms rotate from shoulder connection points during animations
   - Stubby 2px legs
   - Thick dark outline around entire silhouette
   - Hair wraps around and defines the head shape
@@ -594,9 +595,8 @@ BODY_TEMPLATES = {
 # ---------------------------------------------------------------------------
 # ANIMATION REGIONS
 #
-# With no visible arms at rest, the "arm" region is empty in the base template.
-# Walk animation creates arm bumps by shifting body-side pixels.
-# For simplicity, we animate: head, body, leg_l, leg_r.
+# Regions: head, body, leg_l, leg_r.
+# Arms are handled separately via shoulder-pivot overlay system.
 # ---------------------------------------------------------------------------
 
 def _region_for_pixel(x, y, direction):
@@ -615,7 +615,234 @@ def _region_for_pixel(x, y, direction):
 
 
 # ---------------------------------------------------------------------------
-# ANIMATION OFFSETS
+# SHOULDER-PIVOT ARM SYSTEM
+#
+# Arms are 1-2 pixel appendages that rotate from shoulder pivot points.
+# Shoulder pivots sit at the top-outer edge of the body (y=10).
+# Arm pixels are skin-colored and drawn outside the body silhouette.
+#
+# For each animation+direction+frame, we define discrete arm positions
+# as pixel offsets from the shoulder pivot. The offsets simulate rotation:
+#   "down" from shoulder = arm hanging at rest
+#   "horizontal" = arm extended outward
+#   "up" = arm raised above shoulder
+#
+# Outline pixels are added at the arm extremities for visual consistency.
+# ---------------------------------------------------------------------------
+
+# Shoulder pivot positions per direction (left_shoulder, right_shoulder)
+_SHOULDERS = {
+    "down":  ((4, 10), (11, 10)),
+    "up":    ((4, 10), (11, 10)),
+    "left":  ((4, 10), (10, 10)),
+    "right": ((5, 10), (11, 10)),
+}
+
+# Arm pose definitions: pixel offsets from shoulder pivot.
+# Each pose = list of (dx, dy) for arm segment pixels (skin-colored).
+# Convention: negative dx = away from body center for left arm.
+#             positive dx = away from body center for right arm.
+# We store for LEFT arm; right arm mirrors dx.
+
+_ARM_POSE_LEFT = {
+    # Front/back views (arms extend sideways)
+    "rest":       [],                          # hidden in body
+    "out_mid":    [(-1, 1)],                   # 1px out, slightly below shoulder
+    "out_low":    [(-1, 2)],                   # 1px out, well below shoulder
+    "out_high":   [(-1, 0)],                   # 1px out, at shoulder level
+    "swing_fwd":  [(-1, 0)],                   # forward swing = at shoulder
+    "swing_back": [(-1, 2)],                   # back swing = below shoulder
+    "raised":     [(-1, 0), (-1, -1)],         # 2px arm reaching up
+    "reach_up":   [(-1, -1), (-2, -2)],        # reaching up and out diagonally
+    "reach_out":  [(-1, 0), (-2, 0)],          # reaching out horizontally
+    # Side views (arms extend forward/back along depth axis)
+    "side_mid":   [(-1, 1)],                   # beside body
+    "side_fwd":   [(-1, 0)],                   # forward (higher)
+    "side_back":  [(-1, 2)],                   # back (lower)
+    "side_raise": [(-1, 0), (-1, -1)],         # raised on side
+    "side_reach": [(-1, -1), (-1, -2)],        # reaching upward on side
+}
+
+
+def _mirror_pose(pose):
+    """Mirror a left-arm pose for the right arm (flip dx)."""
+    return [(-dx, dy) for dx, dy in pose]
+
+
+def _get_arm_pixels(direction, animation, frame_idx):
+    """Return arm overlay pixels as list of (x, y, color_key).
+
+    Arms rotate from shoulder pivots. Positions are absolute pixel coords.
+    Includes outline pixels at arm tips for visual consistency.
+    """
+    l_sh, r_sh = _SHOULDERS[direction]
+
+    # Look up pose names for this animation/direction/frame
+    l_pose_name, r_pose_name = _ARM_ANIM_POSES[animation][direction][frame_idx]
+
+    # Get offset lists
+    if direction in ("left", "right"):
+        l_offsets = _ARM_POSE_LEFT.get(l_pose_name, [])
+        r_offsets = _mirror_pose(_ARM_POSE_LEFT.get(r_pose_name, []))
+    else:
+        l_offsets = _ARM_POSE_LEFT.get(l_pose_name, [])
+        r_offsets = _mirror_pose(_ARM_POSE_LEFT.get(r_pose_name, []))
+
+    pixels = []
+
+    # Draw left arm segments
+    for dx, dy in l_offsets:
+        ax, ay = l_sh[0] + dx, l_sh[1] + dy
+        if 0 <= ax < FRAME_W and 0 <= ay < FRAME_H:
+            pixels.append((ax, ay, "skin"))
+
+    # Draw right arm segments
+    for dx, dy in r_offsets:
+        ax, ay = r_sh[0] + dx, r_sh[1] + dy
+        if 0 <= ax < FRAME_W and 0 <= ay < FRAME_H:
+            pixels.append((ax, ay, "skin"))
+
+    # Add outline at the tip of each arm (outermost pixel)
+    if l_offsets:
+        tip_dx, tip_dy = l_offsets[-1]
+        tip_x, tip_y = l_sh[0] + tip_dx, l_sh[1] + tip_dy
+        # Outline below/outside the tip
+        for ox, oy in [(-1, 0), (0, 1)]:
+            ex, ey = tip_x + ox, tip_y + oy
+            if 0 <= ex < FRAME_W and 0 <= ey < FRAME_H:
+                # Only add outline if not overlapping existing arm/body pixels
+                if not any(px == ex and py == ey for px, py, _ in pixels):
+                    pixels.append((ex, ey, "outline"))
+
+    if r_offsets:
+        tip_dx, tip_dy = r_offsets[-1]
+        tip_x, tip_y = r_sh[0] + tip_dx, r_sh[1] + tip_dy
+        for ox, oy in [(1, 0), (0, 1)]:
+            ex, ey = tip_x + ox, tip_y + oy
+            if 0 <= ex < FRAME_W and 0 <= ey < FRAME_H:
+                if not any(px == ex and py == ey for px, py, _ in pixels):
+                    pixels.append((ex, ey, "outline"))
+
+    return pixels
+
+
+# Arm pose schedule per animation.
+# Format: _ARM_ANIM_POSES[anim][direction] = [(left_pose, right_pose), ...] x 4 frames
+# Poses reference names in _ARM_POSE_LEFT.
+
+_ARM_ANIM_POSES = {
+    "walk": {
+        "down": [
+            ("out_mid",   "out_mid"),     # frame 0: neutral stride
+            ("swing_fwd", "swing_back"),  # frame 1: left fwd, right back
+            ("out_mid",   "out_mid"),     # frame 2: neutral stride
+            ("swing_back", "swing_fwd"),  # frame 3: left back, right fwd
+        ],
+        "up": [
+            ("out_mid",   "out_mid"),
+            ("swing_fwd", "swing_back"),
+            ("out_mid",   "out_mid"),
+            ("swing_back", "swing_fwd"),
+        ],
+        "left": [
+            ("side_mid",  "side_mid"),
+            ("side_fwd",  "side_back"),
+            ("side_mid",  "side_mid"),
+            ("side_back", "side_fwd"),
+        ],
+        "right": [
+            ("side_mid",  "side_mid"),
+            ("side_fwd",  "side_back"),
+            ("side_mid",  "side_mid"),
+            ("side_back", "side_fwd"),
+        ],
+    },
+
+    "jump": {
+        "down": [
+            ("out_mid",  "out_mid"),      # frame 0: crouch before jump
+            ("out_high", "out_high"),      # frame 1: launching
+            ("raised",   "raised"),        # frame 2: peak — arms up!
+            ("out_high", "out_high"),      # frame 3: landing
+        ],
+        "up": [
+            ("out_mid",  "out_mid"),
+            ("out_high", "out_high"),
+            ("raised",   "raised"),
+            ("out_high", "out_high"),
+        ],
+        "left": [
+            ("side_mid",   "side_mid"),
+            ("side_fwd",   "side_fwd"),
+            ("side_raise", "side_raise"),
+            ("side_fwd",   "side_fwd"),
+        ],
+        "right": [
+            ("side_mid",   "side_mid"),
+            ("side_fwd",   "side_fwd"),
+            ("side_raise", "side_raise"),
+            ("side_fwd",   "side_fwd"),
+        ],
+    },
+
+    "crouch": {
+        "down": [
+            ("out_mid",  "out_mid"),       # frame 0: standing
+            ("out_low",  "out_low"),        # frame 1: lowering
+            ("out_low",  "out_low"),        # frame 2: fully crouched
+            ("out_low",  "out_low"),        # frame 3: holding crouch
+        ],
+        "up": [
+            ("out_mid",  "out_mid"),
+            ("out_low",  "out_low"),
+            ("out_low",  "out_low"),
+            ("out_low",  "out_low"),
+        ],
+        "left": [
+            ("side_mid",  "side_mid"),
+            ("side_back", "side_back"),
+            ("side_back", "side_back"),
+            ("side_back", "side_back"),
+        ],
+        "right": [
+            ("side_mid",  "side_mid"),
+            ("side_back", "side_back"),
+            ("side_back", "side_back"),
+            ("side_back", "side_back"),
+        ],
+    },
+
+    "interact": {
+        "down": [
+            ("out_mid",  "out_mid"),       # frame 0: idle
+            ("out_mid",  "out_high"),       # frame 1: right arm starts raising
+            ("out_mid",  "raised"),         # frame 2: right arm fully raised
+            ("out_mid",  "out_high"),       # frame 3: right arm lowering
+        ],
+        "up": [
+            ("out_mid",  "out_mid"),
+            ("out_mid",  "out_high"),
+            ("out_mid",  "raised"),
+            ("out_mid",  "out_high"),
+        ],
+        "left": [
+            ("side_mid",  "side_mid"),
+            ("side_mid",  "side_fwd"),
+            ("side_mid",  "side_raise"),
+            ("side_mid",  "side_fwd"),
+        ],
+        "right": [
+            ("side_mid",  "side_mid"),
+            ("side_mid",  "side_fwd"),
+            ("side_mid",  "side_raise"),
+            ("side_mid",  "side_fwd"),
+        ],
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# ANIMATION OFFSETS (body region movement)
 # ---------------------------------------------------------------------------
 
 ANIM_OFFSETS = {
@@ -741,6 +968,7 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
     body_pixels = BODY_TEMPLATES[direction]
     offsets = ANIM_OFFSETS[animation][direction]
 
+    # 1. Draw body template pixels (with region-based animation offsets)
     for bx, by, color_key in body_pixels:
         region = _region_for_pixel(bx, by, direction)
         dx, dy = offsets[region][frame_idx]
@@ -748,7 +976,15 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
         if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
             img.putpixel((px, py), palette[color_key])
 
-    # Hair (moves with head)
+    # 2. Draw arm overlay (shoulder-pivot rotation)
+    body_dx, body_dy = offsets["body"][frame_idx]
+    arm_pixels = _get_arm_pixels(direction, animation, frame_idx)
+    for ax, ay, color_key in arm_pixels:
+        px, py = ax + body_dx, ay + body_dy
+        if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
+            img.putpixel((px, py), palette[color_key])
+
+    # 3. Draw hair (moves with head)
     hair_data = HAIR_STYLES.get(hair_style, HAIR_STYLES["short"])
     hair_pixels = hair_data.get(direction, [])
     head_dx, head_dy = offsets["head"][frame_idx]
