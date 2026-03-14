@@ -462,20 +462,7 @@ def _build_body_down():
     p += _row(23, 10, 21, "shirt_shade") # 12px
     p += _row(24, 11, 20, "shirt_shade") # 10px
 
-    # --- Legs ---
-    # Left leg
-    p += _row(25, 11, 15, "pants")
-    p += _row(26, 11, 15, "pants")
-    p += _row(27, 11, 15, "pants_shade")
-    p += _row(28, 11, 15, "shoes")
-    p += _row(29, 11, 15, "shoes_shade")
-    # Right leg
-    p += _row(25, 16, 20, "pants")
-    p += _row(26, 16, 20, "pants")
-    p += _row(27, 16, 20, "pants_shade")
-    p += _row(28, 16, 20, "shoes")
-    p += _row(29, 16, 20, "shoes_shade")
-
+    # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
 
 
@@ -500,18 +487,7 @@ def _build_body_up():
         p += _row(y, 10, 21, "shirt_shade")
     p += _row(24, 11, 20, "shirt_shade")
 
-    # --- Legs ---
-    p += _row(25, 11, 15, "pants_shade")
-    p += _row(26, 11, 15, "pants_shade")
-    p += _row(27, 11, 15, "pants_shade")
-    p += _row(28, 11, 15, "shoes_shade")
-    p += _row(29, 11, 15, "shoes_shade")
-    p += _row(25, 16, 20, "pants_shade")
-    p += _row(26, 16, 20, "pants_shade")
-    p += _row(27, 16, 20, "pants_shade")
-    p += _row(28, 16, 20, "shoes_shade")
-    p += _row(29, 16, 20, "shoes_shade")
-
+    # Legs are drawn by the leg pose system.
     return p
 
 
@@ -544,13 +520,7 @@ def _build_body_left():
     p += _row(23, 9, 20, "shirt_shade")
     p += _row(24, 10, 19, "shirt_shade")
 
-    # --- Legs (side view, overlap) ---
-    p += _row(25, 10, 17, "pants")
-    p += _row(26, 10, 17, "pants")
-    p += _row(27, 10, 17, "pants_shade")
-    p += _row(28, 9, 17, "shoes")
-    p += _row(29, 9, 17, "shoes_shade")
-
+    # Legs are drawn by the leg pose system.
     return p
 
 
@@ -565,6 +535,173 @@ BODY_TEMPLATES = {
     "up": _build_body_up(),
     "left": _build_body_left(),
     "right": _build_body_right(),
+}
+
+
+# ---------------------------------------------------------------------------
+# LEG POSE SYSTEM
+#
+# Legs are separate from body templates so they can change shape per frame.
+# Walk animation uses stride-specific leg poses with spread and rotation.
+# Other animations use standing legs with simple Y offsets.
+#
+# Down/Up: two separate legs (left x=11-15, right x=16-20), spread during stride.
+# Left/Right: legs overlap from side; stride shows clear forward/back separation.
+# ---------------------------------------------------------------------------
+
+def _build_standing_legs_down():
+    return (
+        _row(25, 11, 15, "pants") + _row(25, 16, 20, "pants") +
+        _row(26, 11, 15, "pants") + _row(26, 16, 20, "pants") +
+        _row(27, 11, 15, "pants_shade") + _row(27, 16, 20, "pants_shade") +
+        _row(28, 11, 15, "shoes") + _row(28, 16, 20, "shoes") +
+        _row(29, 11, 15, "shoes_shade") + _row(29, 16, 20, "shoes_shade")
+    )
+
+
+def _build_standing_legs_up():
+    return (
+        _row(25, 11, 15, "pants_shade") + _row(25, 16, 20, "pants_shade") +
+        _row(26, 11, 15, "pants_shade") + _row(26, 16, 20, "pants_shade") +
+        _row(27, 11, 15, "pants_shade") + _row(27, 16, 20, "pants_shade") +
+        _row(28, 11, 15, "shoes_shade") + _row(28, 16, 20, "shoes_shade") +
+        _row(29, 11, 15, "shoes_shade") + _row(29, 16, 20, "shoes_shade")
+    )
+
+
+def _build_standing_legs_left():
+    return (
+        _row(25, 10, 17, "pants") +
+        _row(26, 10, 17, "pants") +
+        _row(27, 10, 17, "pants_shade") +
+        _row(28, 9, 17, "shoes") +
+        _row(29, 9, 17, "shoes_shade")
+    )
+
+
+_STANDING_LEGS = {
+    "down": _build_standing_legs_down(),
+    "up": _build_standing_legs_up(),
+    "left": _build_standing_legs_left(),
+    "right": [(FRAME_W - 1 - x, y, c) for x, y, c in _build_standing_legs_left()],
+}
+
+# --- Walk stride poses (per-frame, absolute pixel positions) ---
+
+# DOWN-FACING WALK: legs spread horizontally, one shifts up (forward) one down (back)
+_walk_down_f0 = _STANDING_LEGS["down"]  # stand
+
+_walk_down_f1 = (  # left leg forward (up+left), right leg back (down+right)
+    _row(24, 10, 14, "pants") +
+    _row(25, 10, 14, "pants") +
+    _row(26, 10, 14, "pants_shade") +
+    _row(27, 10, 14, "shoes") +
+    _row(28, 10, 14, "shoes_shade") +
+    _row(26, 17, 21, "pants") +
+    _row(27, 17, 21, "pants") +
+    _row(28, 17, 21, "pants_shade") +
+    _row(29, 17, 21, "shoes") +
+    _row(30, 17, 21, "shoes_shade")
+)
+
+_walk_down_f2 = _STANDING_LEGS["down"]  # pass through
+
+_walk_down_f3 = (  # right leg forward (up+right), left leg back (down+left)
+    _row(26, 10, 14, "pants") +
+    _row(27, 10, 14, "pants") +
+    _row(28, 10, 14, "pants_shade") +
+    _row(29, 10, 14, "shoes") +
+    _row(30, 10, 14, "shoes_shade") +
+    _row(24, 17, 21, "pants") +
+    _row(25, 17, 21, "pants") +
+    _row(26, 17, 21, "pants_shade") +
+    _row(27, 17, 21, "shoes") +
+    _row(28, 17, 21, "shoes_shade")
+)
+
+# UP-FACING WALK: same spread pattern, shade colors (back view)
+_walk_up_f0 = _STANDING_LEGS["up"]
+
+_walk_up_f1 = (
+    _row(24, 10, 14, "pants_shade") +
+    _row(25, 10, 14, "pants_shade") +
+    _row(26, 10, 14, "pants_shade") +
+    _row(27, 10, 14, "shoes_shade") +
+    _row(28, 10, 14, "shoes_shade") +
+    _row(26, 17, 21, "pants_shade") +
+    _row(27, 17, 21, "pants_shade") +
+    _row(28, 17, 21, "pants_shade") +
+    _row(29, 17, 21, "shoes_shade") +
+    _row(30, 17, 21, "shoes_shade")
+)
+
+_walk_up_f2 = _STANDING_LEGS["up"]
+
+_walk_up_f3 = (
+    _row(26, 10, 14, "pants_shade") +
+    _row(27, 10, 14, "pants_shade") +
+    _row(28, 10, 14, "pants_shade") +
+    _row(29, 10, 14, "shoes_shade") +
+    _row(30, 10, 14, "shoes_shade") +
+    _row(24, 17, 21, "pants_shade") +
+    _row(25, 17, 21, "pants_shade") +
+    _row(26, 17, 21, "pants_shade") +
+    _row(27, 17, 21, "shoes_shade") +
+    _row(28, 17, 21, "shoes_shade")
+)
+
+# LEFT-FACING WALK: front leg extends forward (left), back leg extends back (right)
+# Legs angle outward as they descend from hip, creating V-shaped stride.
+_walk_left_f0 = _STANDING_LEGS["left"]
+
+_walk_left_f1 = (
+    # Front leg (extending forward = left)
+    _row(25, 8, 12, "pants") +
+    _row(26, 7, 12, "pants") +
+    _row(27, 7, 11, "pants_shade") +
+    _row(28, 6, 11, "shoes") +
+    _row(29, 6, 11, "shoes_shade") +
+    # Back leg (extending backward = right)
+    _row(25, 15, 19, "pants") +
+    _row(26, 15, 20, "pants") +
+    _row(27, 16, 20, "pants_shade") +
+    _row(28, 16, 21, "shoes") +
+    _row(29, 16, 21, "shoes_shade")
+)
+
+_walk_left_f2 = _STANDING_LEGS["left"]
+
+_walk_left_f3 = (
+    # Front leg (other leg forward this time — same shape from side view)
+    _row(25, 8, 12, "pants") +
+    _row(26, 7, 12, "pants") +
+    _row(27, 7, 11, "pants_shade") +
+    _row(28, 6, 11, "shoes") +
+    _row(29, 6, 11, "shoes_shade") +
+    # Back leg
+    _row(25, 15, 19, "pants") +
+    _row(26, 15, 20, "pants") +
+    _row(27, 16, 20, "pants_shade") +
+    _row(28, 16, 21, "shoes") +
+    _row(29, 16, 21, "shoes_shade")
+)
+
+# RIGHT-FACING WALK: mirror of left
+def _mirror_legs(poses):
+    return [[(FRAME_W - 1 - x, y, c) for x, y, c in pose] for pose in poses]
+
+_WALK_LEGS = {
+    "down":  [_walk_down_f0,  _walk_down_f1,  _walk_down_f2,  _walk_down_f3],
+    "up":    [_walk_up_f0,    _walk_up_f1,    _walk_up_f2,    _walk_up_f3],
+    "left":  [_walk_left_f0,  _walk_left_f1,  _walk_left_f2,  _walk_left_f3],
+    "right": _mirror_legs([_walk_left_f0, _walk_left_f1, _walk_left_f2, _walk_left_f3]),
+}
+
+# Y offsets for standing legs in non-walk animations (applied uniformly)
+_LEG_Y_OFFSETS = {
+    "jump":     [1, 0, -2, 1],
+    "crouch":   [0, 0, 1, 0],
+    "interact": [0, 0, 0, 0],
 }
 
 
@@ -936,7 +1073,7 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
     body_pixels = BODY_TEMPLATES[direction]
     offsets = ANIM_OFFSETS[animation][direction]
 
-    # 1. Draw body template pixels (with region-based animation offsets)
+    # 1. Draw body template pixels (head + torso, no legs)
     for bx, by, color_key in body_pixels:
         region = _region_for_pixel(bx, by, direction)
         dx, dy = offsets[region][frame_idx]
@@ -944,7 +1081,20 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
         if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
             img.putpixel((px, py), palette[color_key])
 
-    # 2. Draw arm overlay (shoulder-pivot rotation)
+    # 2. Draw legs (per-frame stride poses for walk, standing + offset otherwise)
+    if animation == "walk":
+        leg_pixels = _WALK_LEGS[direction][frame_idx]
+        for lx, ly, color_key in leg_pixels:
+            if 0 <= lx < FRAME_W and 0 <= ly < FRAME_H:
+                img.putpixel((lx, ly), palette[color_key])
+    else:
+        leg_dy = _LEG_Y_OFFSETS[animation][frame_idx]
+        for lx, ly, color_key in _STANDING_LEGS[direction]:
+            py = ly + leg_dy
+            if 0 <= lx < FRAME_W and 0 <= py < FRAME_H:
+                img.putpixel((lx, py), palette[color_key])
+
+    # 3. Draw arm overlay (shoulder-pivot rotation)
     body_dx, body_dy = offsets["body"][frame_idx]
     arm_pixels = _get_arm_pixels(direction, animation, frame_idx)
     for ax, ay, color_key in arm_pixels:
@@ -952,7 +1102,7 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
         if 0 <= px < FRAME_W and 0 <= py < FRAME_H:
             img.putpixel((px, py), palette[color_key])
 
-    # 3. Draw hair (moves with head)
+    # 4. Draw hair (moves with head)
     hair_data = HAIR_STYLES.get(hair_style, HAIR_STYLES["short"])
     hair_pixels = hair_data.get(direction, [])
     head_dx, head_dy = offsets["head"][frame_idx]
