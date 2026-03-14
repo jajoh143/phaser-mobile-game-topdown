@@ -202,18 +202,16 @@ def run_wizard():
 # Custom palette builder
 # ---------------------------------------------------------------------------
 
-COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "mouth_inner", "mouth_line"]
+COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye"]
 
 CUSTOM_DEFAULTS = {
-    "skin":        (235, 190, 160, 255),
-    "hair":        (55, 60, 120, 255),
-    "shirt":       (190, 60, 55, 255),
-    "pants":       (70, 65, 80, 255),
-    "shoes":       (55, 45, 40, 255),
-    "outline":     (35, 28, 28, 255),
-    "eye":         (28, 28, 35, 255),
-    "mouth_inner": (120, 45, 40, 255),
-    "mouth_line":  (35, 28, 28, 255),
+    "skin":    (235, 190, 160, 255),
+    "hair":    (55, 60, 120, 255),
+    "shirt":   (190, 60, 55, 255),
+    "pants":   (70, 65, 80, 255),
+    "shoes":   (55, 45, 40, 255),
+    "outline": (35, 28, 28, 255),
+    "eye":     (28, 28, 35, 255),
 }
 
 

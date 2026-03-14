@@ -39,9 +39,6 @@ ANIMATIONS = ["walk", "jump", "crouch", "interact"]
 
 # ---------------------------------------------------------------------------
 # COLOR PALETTES
-#
-# "mouth_inner" = dark interior of the open mouth
-# "mouth_line"  = the outline/lip of the mouth opening
 # ---------------------------------------------------------------------------
 PRESETS = [
     {
@@ -59,8 +56,6 @@ PRESETS = [
         "shoes_shade": (40, 32, 28, 255),
         "outline": (35, 28, 28, 255),
         "eye": (28, 28, 35, 255),
-        "mouth_inner": (120, 45, 40, 255),
-        "mouth_line": (35, 28, 28, 255),
     },
     {
         "name": "Green goblin, teal tunic",
@@ -77,8 +72,6 @@ PRESETS = [
         "shoes_shade": (36, 30, 25, 255),
         "outline": (28, 35, 28, 255),
         "eye": (25, 25, 30, 255),
-        "mouth_inner": (50, 95, 55, 255),
-        "mouth_line": (28, 35, 28, 255),
     },
     {
         "name": "White hair, mint shirt",
@@ -95,8 +88,6 @@ PRESETS = [
         "shoes_shade": (38, 30, 26, 255),
         "outline": (30, 30, 35, 255),
         "eye": (28, 28, 35, 255),
-        "mouth_inner": (170, 85, 75, 255),
-        "mouth_line": (30, 30, 35, 255),
     },
     {
         "name": "Red beard, brown outfit",
@@ -113,8 +104,6 @@ PRESETS = [
         "shoes_shade": (40, 30, 24, 255),
         "outline": (40, 28, 22, 255),
         "eye": (28, 25, 25, 255),
-        "mouth_inner": (165, 60, 30, 255),
-        "mouth_line": (40, 28, 22, 255),
     },
     {
         "name": "Purple hair, dark cloak",
@@ -131,8 +120,6 @@ PRESETS = [
         "shoes_shade": (28, 24, 32, 255),
         "outline": (30, 25, 35, 255),
         "eye": (25, 22, 30, 255),
-        "mouth_inner": (155, 78, 68, 255),
-        "mouth_line": (30, 25, 35, 255),
     },
     {
         "name": "Cowboy hat, green vest",
@@ -149,8 +136,6 @@ PRESETS = [
         "shoes_shade": (38, 30, 25, 255),
         "outline": (35, 30, 25, 255),
         "eye": (25, 25, 30, 255),
-        "mouth_inner": (160, 80, 65, 255),
-        "mouth_line": (35, 30, 25, 255),
     },
     {
         "name": "Dark skin, orange hair",
@@ -167,8 +152,6 @@ PRESETS = [
         "shoes_shade": (34, 26, 22, 255),
         "outline": (28, 22, 18, 255),
         "eye": (22, 22, 28, 255),
-        "mouth_inner": (100, 55, 38, 255),
-        "mouth_line": (28, 22, 18, 255),
     },
     {
         "name": "Pink hair, chef outfit",
@@ -185,8 +168,6 @@ PRESETS = [
         "shoes_shade": (38, 30, 26, 255),
         "outline": (32, 28, 30, 255),
         "eye": (28, 25, 28, 255),
-        "mouth_inner": (175, 90, 82, 255),
-        "mouth_line": (32, 28, 30, 255),
     },
 ]
 
@@ -395,27 +376,15 @@ def _build_body_down():
     for x in range(4, 12):
         p.append((x, 6, "skin"))
     p.append((12, 6, "outline"))
-    # Row 7: mouth row — open mouth!
+    # Row 7: lower face
     p.append((3, 7, "outline"))
-    p.append((4, 7, "skin"))
-    p.append((5, 7, "skin"))
-    p.append((6, 7, "mouth_line"))
-    p.append((7, 7, "mouth_inner"))
-    p.append((8, 7, "mouth_inner"))
-    p.append((9, 7, "mouth_line"))
-    p.append((10, 7, "skin"))
-    p.append((11, 7, "skin"))
+    for x in range(4, 12):
+        p.append((x, 7, "skin"))
     p.append((12, 7, "outline"))
     # Row 8: lower face / chin area
     p.append((3, 8, "outline"))
-    p.append((4, 8, "skin_shade"))
-    p.append((5, 8, "skin"))
-    p.append((6, 8, "mouth_line"))
-    p.append((7, 8, "skin_shade"))
-    p.append((8, 8, "skin_shade"))
-    p.append((9, 8, "mouth_line"))
-    p.append((10, 8, "skin"))
-    p.append((11, 8, "skin_shade"))
+    for x in range(4, 12):
+        p.append((x, 8, "skin_shade"))
     p.append((12, 8, "outline"))
     # Row 9: chin outline
     p.append((4, 9, "outline"))
@@ -531,13 +500,9 @@ def _build_body_left():
     for x in range(4, 11):
         p.append((x, 6, "skin"))
     p.append((11, 6, "outline"))
-    # Row 7: mouth (side)
+    # Row 7: lower face (side)
     p.append((3, 7, "outline"))
-    p.append((4, 7, "skin"))
-    p.append((5, 7, "mouth_line"))
-    p.append((6, 7, "mouth_inner"))
-    p.append((7, 7, "mouth_line"))
-    for x in range(8, 11):
+    for x in range(4, 11):
         p.append((x, 7, "skin"))
     p.append((11, 7, "outline"))
     # Row 8
