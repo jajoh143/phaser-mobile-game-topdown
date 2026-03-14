@@ -650,40 +650,41 @@ _walk_up_f3 = (
     _row(28, 17, 21, "shoes_shade")
 )
 
-# LEFT-FACING WALK: front leg extends forward (left), back leg extends back (right)
-# Legs angle outward as they descend from hip, creating V-shaped stride.
+# LEFT-FACING WALK: each leg is a 4px-wide column that rotates from the hip.
+# Front leg rotates forward (-45°): each row shifts 1px left.
+# Back leg rotates backward (+45°): each row shifts 1px right.
+# Gap is between the two leg columns, widening toward the feet (V-shape).
 _walk_left_f0 = _STANDING_LEGS["left"]
 
 _walk_left_f1 = (
-    # Front leg (extending forward = left)
-    _row(25, 8, 12, "pants") +
-    _row(26, 7, 12, "pants") +
-    _row(27, 7, 11, "pants_shade") +
-    _row(28, 6, 11, "shoes") +
-    _row(29, 6, 11, "shoes_shade") +
-    # Back leg (extending backward = right)
-    _row(25, 15, 19, "pants") +
-    _row(26, 15, 20, "pants") +
-    _row(27, 16, 20, "pants_shade") +
-    _row(28, 16, 21, "shoes") +
-    _row(29, 16, 21, "shoes_shade")
+    # Back leg (rotated backward = each row shifts 1px right) — drawn first
+    _row(25, 13, 16, "pants") +
+    _row(26, 14, 17, "pants") +
+    _row(27, 15, 18, "pants_shade") +
+    _row(28, 16, 19, "shoes") +
+    _row(29, 16, 19, "shoes_shade") +
+    # Front leg (rotated forward = each row shifts 1px left) — drawn on top
+    _row(25, 11, 14, "pants") +
+    _row(26, 10, 13, "pants") +
+    _row(27, 9, 12, "pants_shade") +
+    _row(28, 8, 11, "shoes") +
+    _row(29, 8, 11, "shoes_shade")
 )
 
 _walk_left_f2 = _STANDING_LEGS["left"]
 
 _walk_left_f3 = (
-    # Front leg (other leg forward this time — same shape from side view)
-    _row(25, 8, 12, "pants") +
-    _row(26, 7, 12, "pants") +
-    _row(27, 7, 11, "pants_shade") +
-    _row(28, 6, 11, "shoes") +
-    _row(29, 6, 11, "shoes_shade") +
-    # Back leg
-    _row(25, 15, 19, "pants") +
-    _row(26, 15, 20, "pants") +
-    _row(27, 16, 20, "pants_shade") +
-    _row(28, 16, 21, "shoes") +
-    _row(29, 16, 21, "shoes_shade")
+    # Same stride shape from side view (other leg leading, visually identical)
+    _row(25, 13, 16, "pants") +
+    _row(26, 14, 17, "pants") +
+    _row(27, 15, 18, "pants_shade") +
+    _row(28, 16, 19, "shoes") +
+    _row(29, 16, 19, "shoes_shade") +
+    _row(25, 11, 14, "pants") +
+    _row(26, 10, 13, "pants") +
+    _row(27, 9, 12, "pants_shade") +
+    _row(28, 8, 11, "shoes") +
+    _row(29, 8, 11, "shoes_shade")
 )
 
 # RIGHT-FACING WALK: mirror of left
