@@ -6,7 +6,7 @@ step-by-step via console prompts instead of requiring CLI flags.
 Run:
     python create_character.py
 """
-# v6 — 16x16 top-heavy chibi style (renders at 2x on 32x32 world grid)
+# v7 — 32x32 detailed chibi style (1:1 on 32x32 world grid)
 
 import os
 import sys
@@ -107,8 +107,8 @@ import generate_character as gen  # noqa: E402
 
 def run_wizard():
     print("=" * 56)
-    print("  Character Sprite Builder (v6 — 16x16 Chibi Style)")
-    print("  Frame: 16x16px (renders 2x on 32x32 world grid)")
+    print("  Character Sprite Builder (v7 — 32x32 Chibi Style)")
+    print("  Frame: 32x32px (1:1 on 32x32 world grid)")
     print("  Animations: walk, jump, crouch, interact")
     print("=" * 56)
 
@@ -202,16 +202,17 @@ def run_wizard():
 # Custom palette builder
 # ---------------------------------------------------------------------------
 
-COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye"]
+COLOR_KEYS = ["skin", "hair", "shirt", "pants", "shoes", "outline", "eye", "eye_highlight"]
 
 CUSTOM_DEFAULTS = {
-    "skin":    (235, 190, 160, 255),
-    "hair":    (55, 60, 120, 255),
-    "shirt":   (190, 60, 55, 255),
-    "pants":   (70, 65, 80, 255),
-    "shoes":   (55, 45, 40, 255),
-    "outline": (35, 28, 28, 255),
-    "eye":     (28, 28, 35, 255),
+    "skin":          (235, 190, 160, 255),
+    "hair":          (55, 60, 120, 255),
+    "shirt":         (190, 60, 55, 255),
+    "pants":         (70, 65, 80, 255),
+    "shoes":         (55, 45, 40, 255),
+    "outline":       (35, 28, 28, 255),
+    "eye":           (28, 28, 35, 255),
+    "eye_highlight": (240, 240, 250, 255),
 }
 
 
