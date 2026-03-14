@@ -666,11 +666,14 @@ def _region_for_pixel(x, y, direction):
 # ---------------------------------------------------------------------------
 
 # Shoulder pivot positions per direction (left_shoulder, right_shoulder)
+# Side views: front arm pivots from torso center for proper side profile.
+# Left-facing:  left arm = front (center x=14), right arm = back (edge x=20)
+# Right-facing: right arm = front (center x=17), left arm = back (edge x=11)
 _SHOULDERS = {
     "down":  ((10, 18), (21, 18)),
     "up":    ((10, 18), (21, 18)),
-    "left":  ((9, 18),  (20, 18)),
-    "right": ((11, 18), (22, 18)),
+    "left":  ((14, 18), (20, 18)),
+    "right": ((11, 18), (17, 18)),
 }
 
 # Arm pose definitions: pixel offsets from shoulder pivot.
