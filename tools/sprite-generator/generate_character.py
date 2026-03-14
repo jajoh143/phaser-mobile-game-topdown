@@ -896,10 +896,10 @@ _ARM_ANIM_POSES = {
             ("side_hang",          "rest"),
         ],
         "right": [
-            ("side_hang",          "rest"),
-            ("side_interact_45",   "rest"),
-            ("side_interact_90",   "rest"),
-            ("side_hang",          "rest"),
+            ("rest", "side_hang"),
+            ("rest", "side_interact_45"),
+            ("rest", "side_interact_90"),
+            ("rest", "side_hang"),
         ],
     },
 }
