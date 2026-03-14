@@ -746,6 +746,25 @@ _ARM_POSE_LEFT = {
         (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
         (-4, -3, "skin"), (-5, -3, "skin"), (-6, -3, "outline"),
     ],
+    # Interact poses — arm rotates forward from side
+    "side_interact_45": [
+        # -45° from vertical: diagonal, each segment shifts 1px forward
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "outline"),
+        (-3, 2, "skin"), (-4, 2, "skin"), (-5, 2, "outline"),
+        (-4, 3, "skin"), (-5, 3, "skin"), (-6, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "outline"),
+    ],
+    "side_interact_90": [
+        # -90° from vertical: horizontal, arm points forward
+        # Width (3px) now in dy, length in dx
+        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"),
+        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"),
+        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"),
+        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"),
+        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"),
+        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"),
+    ],
 }
 
 
@@ -871,16 +890,16 @@ _ARM_ANIM_POSES = {
             ("hang", "swing_fwd"),
         ],
         "left": [
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
+            ("side_hang",          "rest"),
+            ("side_interact_45",   "rest"),
+            ("side_interact_90",   "rest"),
+            ("side_hang",          "rest"),
         ],
         "right": [
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
-            ("side_hang", "rest"),
+            ("side_hang",          "rest"),
+            ("side_interact_45",   "rest"),
+            ("side_interact_90",   "rest"),
+            ("side_hang",          "rest"),
         ],
     },
 }
