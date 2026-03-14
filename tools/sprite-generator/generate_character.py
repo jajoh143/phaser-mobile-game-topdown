@@ -570,12 +570,13 @@ def _build_standing_legs_up():
 
 
 def _build_standing_legs_left():
+    # Centered on torso (torso center ~14.5, legs center 14.5)
     return (
-        _row(25, 10, 17, "pants") +
-        _row(26, 10, 17, "pants") +
-        _row(27, 10, 17, "pants_shade") +
-        _row(28, 9, 17, "shoes") +
-        _row(29, 9, 17, "shoes_shade")
+        _row(25, 11, 18, "pants") +
+        _row(26, 11, 18, "pants") +
+        _row(27, 11, 18, "pants_shade") +
+        _row(28, 10, 18, "shoes") +
+        _row(29, 10, 18, "shoes_shade")
     )
 
 
@@ -593,42 +594,31 @@ _STANDING_LEGS = {
 _walk_down_stand = _STANDING_LEGS["down"]
 _walk_up_stand = _STANDING_LEGS["up"]
 
-# LEFT-FACING WALK: each leg is a 5px-wide column that rotates from the hip.
-# Front leg rotates forward (-45°): each row shifts 1px left.
-# Back leg rotates backward (+45°): each row shifts 1px right.
-# Standing legs span x=10-17 (8px); each stride leg is 5px, centered on torso.
+# LEFT-FACING WALK: centered on torso (center ~14.5).
+# y=25-26: waist/thigh area stays as solid block (no split).
+# y=27-29: legs split and rotate apart. Each stride leg is 6px wide.
 _walk_left_f0 = _STANDING_LEGS["left"]
 
-_walk_left_f1 = (
-    # Back leg (rotated backward = each row shifts 1px right) — drawn first
-    _row(25, 13, 17, "pants") +
-    _row(26, 14, 18, "pants") +
-    _row(27, 15, 19, "pants_shade") +
-    _row(28, 16, 20, "shoes") +
-    _row(29, 16, 20, "shoes_shade") +
-    # Front leg (rotated forward = each row shifts 1px left) — drawn on top
-    _row(25, 10, 14, "pants") +
-    _row(26, 9, 13, "pants") +
-    _row(27, 8, 12, "pants_shade") +
-    _row(28, 7, 11, "shoes") +
-    _row(29, 7, 11, "shoes_shade")
+_walk_left_stride = (
+    # Waist + thigh (y=25-26): solid block, same as standing
+    _row(25, 11, 18, "pants") +
+    _row(26, 11, 18, "pants") +
+    # Lower legs split: back leg drawn first, front leg on top
+    # Back leg (rotates backward, each row +1px right from y=27 base)
+    _row(27, 14, 19, "pants_shade") +   # 6px, starts splitting
+    _row(28, 15, 20, "shoes") +          # 6px, +1px right
+    _row(29, 15, 20, "shoes_shade") +    # 6px, foot plants
+    # Front leg (rotates forward, each row -1px left from y=27 base)
+    _row(27, 9, 14, "pants_shade") +     # 6px, starts splitting
+    _row(28, 8, 13, "shoes") +           # 6px, -1px left
+    _row(29, 8, 13, "shoes_shade")       # 6px, foot plants
 )
 
 _walk_left_f2 = _STANDING_LEGS["left"]
 
-_walk_left_f3 = (
-    # Same stride shape from side view (other leg leading, visually identical)
-    _row(25, 13, 17, "pants") +
-    _row(26, 14, 18, "pants") +
-    _row(27, 15, 19, "pants_shade") +
-    _row(28, 16, 20, "shoes") +
-    _row(29, 16, 20, "shoes_shade") +
-    _row(25, 10, 14, "pants") +
-    _row(26, 9, 13, "pants") +
-    _row(27, 8, 12, "pants_shade") +
-    _row(28, 7, 11, "shoes") +
-    _row(29, 7, 11, "shoes_shade")
-)
+# F1 and F3 look identical from side view (different leg leads, same shape)
+_walk_left_f1 = _walk_left_stride
+_walk_left_f3 = _walk_left_stride
 
 # RIGHT-FACING WALK: mirror of left
 def _mirror_legs(poses):
