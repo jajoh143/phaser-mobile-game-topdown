@@ -844,10 +844,10 @@ _ARM_ANIM_POSES = {
             ("side_fwd",   "rest"),
         ],
         "right": [
-            ("side_hang",  "rest"),
-            ("side_fwd",   "rest"),
-            ("side_raise", "rest"),
-            ("side_fwd",   "rest"),
+            ("rest", "side_hang"),
+            ("rest", "side_fwd"),
+            ("rest", "side_raise"),
+            ("rest", "side_fwd"),
         ],
     },
     "crouch": {
