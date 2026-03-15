@@ -829,10 +829,10 @@ _ARM_ANIM_POSES = {
             ("side_back", "rest"),
         ],
         "right": [
-            ("side_hang", "rest"),
-            ("side_fwd",  "rest"),
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
+            ("rest", "side_hang"),
+            ("rest", "side_fwd"),
+            ("rest", "side_hang"),
+            ("rest", "side_back"),
         ],
     },
     "jump": {
@@ -881,10 +881,10 @@ _ARM_ANIM_POSES = {
             ("side_back", "rest"),
         ],
         "right": [
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
+            ("rest", "side_hang"),
+            ("rest", "side_back"),
+            ("rest", "side_back"),
+            ("rest", "side_back"),
         ],
     },
     "interact": {
