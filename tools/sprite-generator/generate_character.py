@@ -2,13 +2,15 @@
 """
 Top-down chibi character sprite generator for Phaser 3.
 
-Generates 32x32 spritesheets with balanced chibi proportions:
+Generates 32x32 spritesheets with SNES-inspired chibi proportions:
   - Moderate round head (~40% of sprite) with simple dot eyes
-  - Extended torso for better body definition
+  - Shoulder step-out (14px) tapering to waist (10px) for body definition
+  - 2px leg gap for clear readability in front/back views
   - Thick 3px-wide arms hanging from shoulder pivots
   - Detailed hair with 3-tone shading (highlight, base, shade)
   - Clothing with shirt/pants/shoes distinction
-  - Dark outline around entire silhouette
+  - Hue-shifted shadows (cool-shifted) for depth and richness
+  - Colored outlines (dark chromatic tones, not pure black)
 
 Sprites are 32x32 native, fitting 1:1 on 32x32 world tiles in Phaser.
 
@@ -44,129 +46,129 @@ PRESETS = [
     {
         "name": "Blue hair, red shirt",
         "skin": (235, 190, 160, 255),
-        "skin_shade": (210, 165, 135, 255),
+        "skin_shade": (208, 158, 148, 255),       # hue-shifted toward rose
         "hair": (55, 60, 120, 255),
-        "hair_shade": (38, 42, 85, 255),
+        "hair_shade": (35, 38, 95, 255),           # shifted toward deeper blue
         "hair_highlight": (75, 80, 150, 255),
         "shirt": (190, 60, 55, 255),
-        "shirt_shade": (150, 42, 38, 255),
+        "shirt_shade": (148, 38, 55, 255),         # red shifted toward maroon
         "pants": (70, 65, 80, 255),
-        "pants_shade": (52, 48, 60, 255),
+        "pants_shade": (48, 42, 68, 255),          # shifted toward blue
         "shoes": (55, 45, 40, 255),
-        "shoes_shade": (40, 32, 28, 255),
-        "outline": (35, 28, 28, 255),
+        "shoes_shade": (38, 30, 38, 255),          # shifted toward purple
+        "outline": (25, 20, 42, 255),              # dark navy-purple
         "eye": (28, 28, 35, 255),
     },
     {
         "name": "Green goblin, teal tunic",
         "skin": (85, 160, 95, 255),
-        "skin_shade": (62, 130, 70, 255),
+        "skin_shade": (58, 125, 82, 255),          # green shifted toward teal
         "hair": (55, 120, 65, 255),
-        "hair_shade": (38, 90, 45, 255),
+        "hair_shade": (32, 88, 58, 255),           # shifted toward teal
         "hair_highlight": (75, 145, 85, 255),
         "shirt": (60, 135, 140, 255),
-        "shirt_shade": (42, 105, 110, 255),
+        "shirt_shade": (38, 98, 118, 255),         # teal shifted toward blue
         "pants": (55, 100, 105, 255),
-        "pants_shade": (40, 78, 82, 255),
+        "pants_shade": (35, 72, 90, 255),          # shifted toward blue
         "shoes": (50, 42, 36, 255),
-        "shoes_shade": (36, 30, 25, 255),
-        "outline": (28, 35, 28, 255),
+        "shoes_shade": (34, 28, 30, 255),          # shifted toward cool
+        "outline": (18, 32, 30, 255),              # dark teal
         "eye": (25, 25, 30, 255),
     },
     {
         "name": "White hair, mint shirt",
         "skin": (235, 200, 175, 255),
-        "skin_shade": (210, 178, 150, 255),
+        "skin_shade": (212, 175, 162, 255),        # shifted toward lavender
         "hair": (220, 225, 230, 255),
-        "hair_shade": (185, 190, 200, 255),
+        "hair_shade": (182, 188, 205, 255),        # shifted toward blue-grey
         "hair_highlight": (242, 245, 248, 255),
         "shirt": (140, 210, 185, 255),
-        "shirt_shade": (110, 178, 155, 255),
+        "shirt_shade": (105, 172, 165, 255),       # mint shifted toward teal
         "pants": (100, 170, 148, 255),
-        "pants_shade": (78, 140, 120, 255),
+        "pants_shade": (72, 135, 130, 255),        # shifted toward blue
         "shoes": (52, 42, 38, 255),
-        "shoes_shade": (38, 30, 26, 255),
-        "outline": (30, 30, 35, 255),
+        "shoes_shade": (36, 28, 32, 255),          # shifted toward cool
+        "outline": (22, 24, 40, 255),              # dark slate-blue
         "eye": (28, 28, 35, 255),
     },
     {
         "name": "Red beard, brown outfit",
         "skin": (225, 175, 140, 255),
-        "skin_shade": (200, 150, 118, 255),
+        "skin_shade": (198, 148, 128, 255),        # shifted toward rose
         "hair": (195, 80, 35, 255),
-        "hair_shade": (155, 58, 22, 255),
+        "hair_shade": (152, 52, 30, 255),          # shifted toward deeper red
         "hair_highlight": (225, 110, 55, 255),
         "shirt": (140, 100, 65, 255),
-        "shirt_shade": (110, 78, 48, 255),
+        "shirt_shade": (108, 72, 55, 255),         # brown shifted toward olive
         "pants": (120, 85, 55, 255),
-        "pants_shade": (95, 65, 40, 255),
+        "pants_shade": (92, 60, 45, 255),          # shifted toward warm brown
         "shoes": (55, 42, 35, 255),
-        "shoes_shade": (40, 30, 24, 255),
-        "outline": (40, 28, 22, 255),
+        "shoes_shade": (38, 28, 30, 255),          # shifted toward maroon
+        "outline": (32, 20, 22, 255),              # dark brown-red
         "eye": (28, 25, 25, 255),
     },
     {
         "name": "Purple hair, dark cloak",
         "skin": (230, 195, 165, 255),
-        "skin_shade": (205, 170, 140, 255),
+        "skin_shade": (202, 165, 150, 255),        # shifted toward mauve
         "hair": (120, 70, 145, 255),
-        "hair_shade": (88, 48, 110, 255),
+        "hair_shade": (85, 42, 115, 255),          # shifted toward deep violet
         "hair_highlight": (150, 95, 175, 255),
         "shirt": (55, 48, 65, 255),
-        "shirt_shade": (38, 32, 48, 255),
+        "shirt_shade": (35, 28, 52, 255),          # shifted toward indigo
         "pants": (48, 42, 58, 255),
-        "pants_shade": (35, 30, 42, 255),
+        "pants_shade": (32, 26, 48, 255),          # shifted toward deep blue
         "shoes": (40, 35, 45, 255),
-        "shoes_shade": (28, 24, 32, 255),
-        "outline": (30, 25, 35, 255),
+        "shoes_shade": (26, 22, 36, 255),          # shifted toward indigo
+        "outline": (22, 18, 40, 255),              # dark purple
         "eye": (25, 22, 30, 255),
     },
     {
         "name": "Cowboy hat, green vest",
         "skin": (225, 185, 148, 255),
-        "skin_shade": (200, 160, 125, 255),
+        "skin_shade": (198, 155, 132, 255),        # shifted toward rose
         "hair": (100, 75, 50, 255),
-        "hair_shade": (72, 52, 35, 255),
+        "hair_shade": (70, 48, 40, 255),           # shifted toward warm brown
         "hair_highlight": (128, 98, 68, 255),
         "shirt": (75, 140, 72, 255),
-        "shirt_shade": (55, 110, 52, 255),
+        "shirt_shade": (50, 108, 62, 255),         # green shifted toward teal
         "pants": (65, 62, 78, 255),
-        "pants_shade": (48, 45, 58, 255),
+        "pants_shade": (42, 40, 65, 255),          # shifted toward blue
         "shoes": (52, 42, 36, 255),
-        "shoes_shade": (38, 30, 25, 255),
-        "outline": (35, 30, 25, 255),
+        "shoes_shade": (35, 28, 30, 255),          # shifted toward cool
+        "outline": (25, 22, 28, 255),              # dark olive-grey
         "eye": (25, 25, 30, 255),
     },
     {
         "name": "Dark skin, orange hair",
         "skin": (140, 95, 65, 255),
-        "skin_shade": (115, 75, 48, 255),
+        "skin_shade": (112, 70, 55, 255),          # shifted toward brown-red
         "hair": (220, 140, 45, 255),
-        "hair_shade": (185, 110, 30, 255),
+        "hair_shade": (182, 105, 35, 255),         # orange shifted toward red
         "hair_highlight": (245, 170, 65, 255),
         "shirt": (60, 120, 155, 255),
-        "shirt_shade": (42, 95, 125, 255),
+        "shirt_shade": (38, 88, 132, 255),         # shifted toward deeper blue
         "pants": (55, 55, 70, 255),
-        "pants_shade": (40, 40, 52, 255),
+        "pants_shade": (38, 35, 58, 255),          # shifted toward blue
         "shoes": (48, 38, 32, 255),
-        "shoes_shade": (34, 26, 22, 255),
-        "outline": (28, 22, 18, 255),
+        "shoes_shade": (32, 24, 28, 255),          # shifted toward cool
+        "outline": (22, 16, 24, 255),              # dark plum-brown
         "eye": (22, 22, 28, 255),
     },
     {
         "name": "Pink hair, chef outfit",
         "skin": (238, 205, 178, 255),
-        "skin_shade": (215, 182, 155, 255),
+        "skin_shade": (215, 178, 165, 255),        # shifted toward rose
         "hair": (215, 120, 140, 255),
-        "hair_shade": (180, 90, 108, 255),
+        "hair_shade": (178, 85, 118, 255),         # pink shifted toward mauve
         "hair_highlight": (238, 150, 168, 255),
         "shirt": (232, 232, 238, 255),
-        "shirt_shade": (200, 200, 210, 255),
+        "shirt_shade": (198, 195, 215, 255),       # shifted toward cool grey-blue
         "pants": (65, 65, 78, 255),
-        "pants_shade": (48, 48, 60, 255),
+        "pants_shade": (45, 42, 65, 255),          # shifted toward blue
         "shoes": (52, 42, 38, 255),
-        "shoes_shade": (38, 30, 26, 255),
-        "outline": (32, 28, 30, 255),
+        "shoes_shade": (36, 28, 32, 255),          # shifted toward cool
+        "outline": (25, 18, 35, 255),              # dark rose-purple
         "eye": (28, 25, 28, 255),
     },
 ]
@@ -412,8 +414,11 @@ DEFAULT_HAIR = ["short", "short", "short", "short", "long", "ponytail", "spiky",
 #   y 5-6:   head top / hair overlap
 #   y 7-12:  head full width (eyes at y=10)
 #   y 13-15: lower face, chin
-#   y 16-24: torso / shirt (extended, 9 rows)
-#   y 25-27: pants
+#   y 16-17: neck / upper torso (8-12px)
+#   y 18-19: shoulder flare (14px — step-out)
+#   y 20-21: mid torso (12px)
+#   y 22-24: waist taper + hips (10px)
+#   y 25-27: pants (2px gap between legs)
 #   y 28-29: shoes
 #
 # Arms are handled by the shoulder-pivot overlay system (3px wide, 6px long).
@@ -451,16 +456,16 @@ def _build_body_down():
     ]:
         p.append((x, y, c))
 
-    # --- Torso / Shirt (extended, 9 rows) ---
+    # --- Torso / Shirt (shoulder step-out + waist taper) ---
     p += _row(16, 12, 19, "shirt")       # 8px - neck
-    p += _row(17, 11, 20, "shirt")       # 10px
-    p += _row(18, 10, 21, "shirt")       # 12px
-    p += _row(19, 10, 21, "shirt")       # 12px
+    p += _row(17, 10, 21, "shirt")       # 12px - widening
+    p += _row(18, 9, 22, "shirt")        # 14px - shoulder flare
+    p += _row(19, 9, 22, "shirt")        # 14px - shoulders
     p += _row(20, 10, 21, "shirt")       # 12px
     p += _row(21, 10, 21, "shirt")       # 12px
-    p += _row(22, 10, 21, "shirt_shade") # 12px
-    p += _row(23, 10, 21, "shirt_shade") # 12px
-    p += _row(24, 11, 20, "shirt_shade") # 10px
+    p += _row(22, 11, 20, "shirt_shade") # 10px - waist taper
+    p += _row(23, 11, 20, "shirt_shade") # 10px - waist
+    p += _row(24, 11, 20, "shirt_shade") # 10px - hips
 
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
@@ -480,12 +485,16 @@ def _build_body_up():
     p += _row(14, 9, 22, "skin_shade")
     p += _row(15, 11, 20, "skin_shade")
 
-    # --- Torso (back) ---
+    # --- Torso (back, shoulder step-out + waist taper) ---
     p += _row(16, 12, 19, "shirt_shade")
-    p += _row(17, 11, 20, "shirt_shade")
-    for y in range(18, 24):
-        p += _row(y, 10, 21, "shirt_shade")
-    p += _row(24, 11, 20, "shirt_shade")
+    p += _row(17, 10, 21, "shirt_shade")     # widening
+    p += _row(18, 9, 22, "shirt_shade")      # shoulder flare
+    p += _row(19, 9, 22, "shirt_shade")      # shoulders
+    p += _row(20, 10, 21, "shirt_shade")
+    p += _row(21, 10, 21, "shirt_shade")
+    p += _row(22, 11, 20, "shirt_shade")     # waist taper
+    p += _row(23, 11, 20, "shirt_shade")     # waist
+    p += _row(24, 11, 20, "shirt_shade")     # hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -509,16 +518,16 @@ def _build_body_left():
     p.append((9, 10, "eye"))
     p.append((10, 10, "eye"))
 
-    # --- Torso (side, narrower) ---
+    # --- Torso (side, shoulder step-out + waist taper) ---
     p += _row(16, 11, 18, "shirt")
-    p += _row(17, 10, 19, "shirt")
-    p += _row(18, 9, 20, "shirt")
-    p += _row(19, 9, 20, "shirt")
-    p += _row(20, 9, 20, "shirt")
-    p += _row(21, 9, 20, "shirt")
-    p += _row(22, 9, 20, "shirt_shade")
-    p += _row(23, 9, 20, "shirt_shade")
-    p += _row(24, 10, 19, "shirt_shade")
+    p += _row(17, 10, 19, "shirt")       # widening
+    p += _row(18, 8, 21, "shirt")        # shoulder flare (14px)
+    p += _row(19, 8, 21, "shirt")        # shoulders
+    p += _row(20, 9, 20, "shirt")        # 12px
+    p += _row(21, 9, 20, "shirt")        # 12px
+    p += _row(22, 10, 19, "shirt_shade") # waist taper (10px)
+    p += _row(23, 10, 19, "shirt_shade") # waist
+    p += _row(24, 10, 19, "shirt_shade") # hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -545,27 +554,29 @@ BODY_TEMPLATES = {
 # Walk animation uses stride-specific leg poses with spread and rotation.
 # Other animations use standing legs with simple Y offsets.
 #
-# Down/Up: two separate legs (left x=11-15, right x=16-20), spread during stride.
+# Down/Up: two separate legs (left x=11-14, right x=17-20) with 2px gap for readability.
 # Left/Right: legs overlap from side; stride shows clear forward/back separation.
 # ---------------------------------------------------------------------------
 
 def _build_standing_legs_down():
+    # 2px gap between legs (x=15-16 empty) for readability
     return (
-        _row(25, 11, 15, "pants") + _row(25, 16, 20, "pants") +
-        _row(26, 11, 15, "pants") + _row(26, 16, 20, "pants") +
-        _row(27, 11, 15, "pants_shade") + _row(27, 16, 20, "pants_shade") +
-        _row(28, 11, 15, "shoes") + _row(28, 16, 20, "shoes") +
-        _row(29, 11, 15, "shoes_shade") + _row(29, 16, 20, "shoes_shade")
+        _row(25, 11, 14, "pants") + _row(25, 17, 20, "pants") +
+        _row(26, 11, 14, "pants") + _row(26, 17, 20, "pants") +
+        _row(27, 11, 14, "pants_shade") + _row(27, 17, 20, "pants_shade") +
+        _row(28, 11, 14, "shoes") + _row(28, 17, 20, "shoes") +
+        _row(29, 11, 14, "shoes_shade") + _row(29, 17, 20, "shoes_shade")
     )
 
 
 def _build_standing_legs_up():
+    # 2px gap between legs (x=15-16 empty) for readability
     return (
-        _row(25, 11, 15, "pants_shade") + _row(25, 16, 20, "pants_shade") +
-        _row(26, 11, 15, "pants_shade") + _row(26, 16, 20, "pants_shade") +
-        _row(27, 11, 15, "pants_shade") + _row(27, 16, 20, "pants_shade") +
-        _row(28, 11, 15, "shoes_shade") + _row(28, 16, 20, "shoes_shade") +
-        _row(29, 11, 15, "shoes_shade") + _row(29, 16, 20, "shoes_shade")
+        _row(25, 11, 14, "pants_shade") + _row(25, 17, 20, "pants_shade") +
+        _row(26, 11, 14, "pants_shade") + _row(26, 17, 20, "pants_shade") +
+        _row(27, 11, 14, "pants_shade") + _row(27, 17, 20, "pants_shade") +
+        _row(28, 11, 14, "shoes_shade") + _row(28, 17, 20, "shoes_shade") +
+        _row(29, 11, 14, "shoes_shade") + _row(29, 17, 20, "shoes_shade")
     )
 
 
@@ -670,10 +681,10 @@ def _region_for_pixel(x, y, direction):
 # Left-facing:  left arm = front (center x=14), right arm = back (edge x=20)
 # Right-facing: right arm = front (center x=17), left arm = back (edge x=11)
 _SHOULDERS = {
-    "down":  ((10, 18), (21, 18)),
-    "up":    ((10, 18), (21, 18)),
-    "left":  ((16, 18), (20, 18)),
-    "right": ((11, 18), (15, 18)),
+    "down":  ((9, 18), (22, 18)),      # widened for shoulder flare
+    "up":    ((9, 18), (22, 18)),
+    "left":  ((16, 18), (21, 18)),     # back arm at wider shoulder edge
+    "right": ((10, 18), (15, 18)),     # back arm at wider shoulder edge
 }
 
 # Arm pose definitions: pixel offsets from shoulder pivot.
