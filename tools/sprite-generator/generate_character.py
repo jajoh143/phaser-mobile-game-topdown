@@ -3,14 +3,16 @@
 Top-down chibi character sprite generator for Phaser 3.
 
 Generates 32x32 spritesheets with SNES-inspired chibi proportions:
-  - Moderate round head (~40% of sprite) with simple dot eyes
-  - Shoulder step-out (14px) tapering to waist (10px) for body definition
+  - Moderate round head (~40% of sprite) with 2x2 eyes, catchlight, and
+    forehead highlight for 3/4 top-down depth
+  - Shoulder step-out (14px) tapering to waist (10px) with belt-line detail
   - 2px leg gap for clear readability in front/back views
   - Thick 3px-wide arms hanging from shoulder pivots
   - Detailed hair with 3-tone shading (highlight, base, shade)
-  - Clothing with shirt/pants/shoes distinction
+  - Clothing with shirt/pants/shoes distinction and belt-line detail
   - Hue-shifted shadows (cool-shifted) for depth and richness
-  - Colored outlines (dark chromatic tones, not pure black)
+  - Selective outlining (sel-out): lighter outlines on light-facing edges
+  - Forehead highlight and interior torso shading for depth
 
 Sprites are 32x32 native, fitting 1:1 on 32x32 world tiles in Phaser.
 
@@ -172,6 +174,62 @@ PRESETS = [
         "eye": (28, 25, 28, 255),
     },
 ]
+
+
+def _derive_palette(preset: dict) -> dict:
+    """Derive additional colors from a base preset for enhanced rendering.
+
+    Adds: eye_highlight, eye_white, skin_highlight, shirt_highlight,
+          belt, outline_light (for sel-out on light-facing edges).
+    """
+    pal = dict(preset)
+
+    # Eye catchlight — bright white with slight warmth
+    pal["eye_highlight"] = (255, 255, 248, 255)
+
+    # Eye white — off-white for the visible sclera portion
+    pal["eye_white"] = (235, 232, 228, 255)
+
+    # Skin highlight — shift toward yellow/warm, lighten
+    sr, sg, sb, sa = pal["skin"]
+    pal["skin_highlight"] = (
+        min(sr + 18, 255),
+        min(sg + 12, 255),
+        min(sb + 2, 255),
+        sa,
+    )
+
+    # Shirt highlight — lighten and warm slightly
+    tr, tg, tb, ta = pal["shirt"]
+    pal["shirt_highlight"] = (
+        min(tr + 25, 255),
+        min(tg + 20, 255),
+        min(tb + 15, 255),
+        ta,
+    )
+
+    # Belt — midpoint between shirt_shade and pants, slightly darker
+    shr, shg, shb, sha = pal["shirt_shade"]
+    pr, pg, pb, _ = pal["pants"]
+    pal["belt"] = (
+        max((shr + pr) // 2 - 15, 0),
+        max((shg + pg) // 2 - 15, 0),
+        max((shb + pb) // 2 - 10, 0),
+        sha,
+    )
+
+    # Sel-out: lighter outline for light-facing edges (top/shoulders)
+    # Blend outline toward shirt base color
+    olr, olg, olb, ola = pal["outline"]
+    pal["outline_light"] = (
+        min(olr + 40, 180),
+        min(olg + 35, 180),
+        min(olb + 35, 180),
+        ola,
+    )
+
+    return pal
+
 
 # ---------------------------------------------------------------------------
 # HAIR STYLES — pixel masks for 32x32
@@ -424,14 +482,17 @@ DEFAULT_HAIR = ["short", "short", "short", "short", "long", "ponytail", "spiky",
 # Arms are handled by the shoulder-pivot overlay system (3px wide, 6px long).
 # ---------------------------------------------------------------------------
 
-def _row(y, xs, xe, color):
-    """Row with outline on both edges, color fill in between."""
+def _row(y, xs, xe, color, outline_l="outline", outline_r="outline"):
+    """Row with outline on both edges, color fill in between.
+
+    outline_l/outline_r can be changed for selective outlining (sel-out).
+    """
     if xe - xs < 2:
-        return [(x, y, "outline") for x in range(xs, xe + 1)]
-    p = [(xs, y, "outline")]
+        return [(x, y, outline_l) for x in range(xs, xe + 1)]
+    p = [(xs, y, outline_l)]
     for x in range(xs + 1, xe):
         p.append((x, y, color))
-    p.append((xe, y, "outline"))
+    p.append((xe, y, outline_r))
     return p
 
 
@@ -440,8 +501,9 @@ def _build_body_down():
     p = []
 
     # --- Head (oval, 18px wide max) ---
-    p += _row(5, 11, 20, "skin")         # 10px - top
-    p += _row(6, 9, 22, "skin")          # 14px
+    # Sel-out: top of head uses outline_light (light falls from above)
+    p += _row(5, 11, 20, "skin", "outline_light", "outline_light")   # 10px - top
+    p += _row(6, 9, 22, "skin", "outline_light", "outline_light")    # 14px
     p += _row(7, 8, 23, "skin")          # 16px
     for y in range(8, 13):
         p += _row(y, 7, 24, "skin")      # 18px - full width
@@ -449,23 +511,35 @@ def _build_body_down():
     p += _row(14, 9, 22, "skin_shade")   # 14px
     p += _row(15, 11, 20, "skin_shade")  # 10px - chin
 
-    # Eyes (simple 2-dot, just "eye" color) — at y=10
-    for x, y, c in [
-        (10, 10, "eye"), (11, 10, "eye"),
-        (20, 10, "eye"), (21, 10, "eye"),
-    ]:
-        p.append((x, y, c))
+    # Forehead highlight (y=8, between hair and eyes)
+    for x in range(12, 20):
+        p.append((x, 8, "skin_highlight"))
+
+    # Eyes (2x2 with catchlight) — at y=10-11 (lowered for 3/4 top-down)
+    #   Layout per eye:  [highlight] [eye_color]
+    #                    [eye_white] [eye_color]
+    # Left eye (x=10-11, y=10-11)
+    p.append((10, 10, "eye_highlight"))   # catchlight upper-left
+    p.append((11, 10, "eye"))             # iris/pupil upper-right
+    p.append((10, 11, "eye_white"))       # sclera lower-left
+    p.append((11, 11, "eye"))             # iris/pupil lower-right
+    # Right eye (x=20-21, y=10-11)
+    p.append((20, 10, "eye"))             # iris/pupil upper-left
+    p.append((21, 10, "eye_highlight"))   # catchlight upper-right
+    p.append((20, 11, "eye"))             # iris/pupil lower-left
+    p.append((21, 11, "eye_white"))       # sclera lower-right
 
     # --- Torso / Shirt (shoulder step-out + waist taper) ---
-    p += _row(16, 12, 19, "shirt")       # 8px - neck
-    p += _row(17, 10, 21, "shirt")       # 12px - widening
-    p += _row(18, 9, 22, "shirt")        # 14px - shoulder flare
-    p += _row(19, 9, 22, "shirt")        # 14px - shoulders
-    p += _row(20, 10, 21, "shirt")       # 12px
-    p += _row(21, 10, 21, "shirt")       # 12px
-    p += _row(22, 11, 20, "shirt_shade") # 10px - waist taper
-    p += _row(23, 11, 20, "shirt_shade") # 10px - waist
-    p += _row(24, 11, 20, "shirt_shade") # 10px - hips
+    # Sel-out: shoulders use outline_light, waist keeps dark outline
+    p += _row(16, 12, 19, "shirt_shade")  # 8px - neck (head shadow)
+    p += _row(17, 10, 21, "shirt_highlight", "outline_light", "outline_light")  # highlight strip
+    p += _row(18, 9, 22, "shirt", "outline_light", "outline_light")   # shoulder flare
+    p += _row(19, 9, 22, "shirt", "outline_light", "outline_light")   # shoulders
+    p += _row(20, 10, 21, "shirt")        # 12px
+    p += _row(21, 10, 21, "shirt")        # 12px
+    p += _row(22, 11, 20, "belt")         # Belt line — breaks upper/lower torso
+    p += _row(23, 11, 20, "shirt_shade")  # 10px - waist
+    p += _row(24, 11, 20, "shirt_shade")  # 10px - hips
 
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
@@ -476,8 +550,9 @@ def _build_body_up():
     p = []
 
     # --- Head (back, all skin_shade) ---
-    p += _row(5, 11, 20, "skin_shade")
-    p += _row(6, 9, 22, "skin_shade")
+    # Sel-out: top of head still catches light from above
+    p += _row(5, 11, 20, "skin_shade", "outline_light", "outline_light")
+    p += _row(6, 9, 22, "skin_shade", "outline_light", "outline_light")
     p += _row(7, 8, 23, "skin_shade")
     for y in range(8, 13):
         p += _row(y, 7, 24, "skin_shade")
@@ -486,15 +561,15 @@ def _build_body_up():
     p += _row(15, 11, 20, "skin_shade")
 
     # --- Torso (back, shoulder step-out + waist taper) ---
-    p += _row(16, 12, 19, "shirt_shade")
-    p += _row(17, 10, 21, "shirt_shade")     # widening
-    p += _row(18, 9, 22, "shirt_shade")      # shoulder flare
-    p += _row(19, 9, 22, "shirt_shade")      # shoulders
+    p += _row(16, 12, 19, "shirt_shade")       # neck (head shadow)
+    p += _row(17, 10, 21, "shirt_shade")       # widening
+    p += _row(18, 9, 22, "shirt_shade", "outline_light", "outline_light")  # shoulders
+    p += _row(19, 9, 22, "shirt_shade", "outline_light", "outline_light")  # shoulders
     p += _row(20, 10, 21, "shirt_shade")
     p += _row(21, 10, 21, "shirt_shade")
-    p += _row(22, 11, 20, "shirt_shade")     # waist taper
-    p += _row(23, 11, 20, "shirt_shade")     # waist
-    p += _row(24, 11, 20, "shirt_shade")     # hips
+    p += _row(22, 11, 20, "belt")              # Belt line
+    p += _row(23, 11, 20, "shirt_shade")       # waist
+    p += _row(24, 11, 20, "shirt_shade")       # hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -505,8 +580,9 @@ def _build_body_left():
     p = []
 
     # --- Head (side, shifted slightly left) ---
-    p += _row(5, 10, 19, "skin")
-    p += _row(6, 8, 21, "skin")
+    # Sel-out: top of head uses lighter outline
+    p += _row(5, 10, 19, "skin", "outline_light", "outline_light")
+    p += _row(6, 8, 21, "skin", "outline_light", "outline_light")
     p += _row(7, 7, 22, "skin")
     for y in range(8, 13):
         p += _row(y, 6, 23, "skin")      # 18px
@@ -514,20 +590,29 @@ def _build_body_left():
     p += _row(14, 8, 21, "skin_shade")
     p += _row(15, 10, 19, "skin_shade")
 
-    # One eye visible (left side) — simple 2-dot
-    p.append((9, 10, "eye"))
-    p.append((10, 10, "eye"))
+    # Forehead highlight
+    for x in range(11, 18):
+        p.append((x, 8, "skin_highlight"))
+
+    # One eye visible (left side) — 2x2 with catchlight
+    #   [highlight] [eye]
+    #   [eye_white] [eye]
+    p.append((9, 10, "eye_highlight"))    # catchlight upper-left
+    p.append((10, 10, "eye"))             # iris upper-right
+    p.append((9, 11, "eye_white"))        # sclera lower-left
+    p.append((10, 11, "eye"))             # iris lower-right
 
     # --- Torso (side, shoulder step-out + waist taper) ---
-    p += _row(16, 11, 18, "shirt")
-    p += _row(17, 10, 19, "shirt")       # widening
-    p += _row(18, 8, 21, "shirt")        # shoulder flare (14px)
-    p += _row(19, 8, 21, "shirt")        # shoulders
-    p += _row(20, 9, 20, "shirt")        # 12px
-    p += _row(21, 9, 20, "shirt")        # 12px
-    p += _row(22, 10, 19, "shirt_shade") # waist taper (10px)
-    p += _row(23, 10, 19, "shirt_shade") # waist
-    p += _row(24, 10, 19, "shirt_shade") # hips
+    # Sel-out: top of shoulders uses lighter outline
+    p += _row(16, 11, 18, "shirt_shade")  # neck (head shadow)
+    p += _row(17, 10, 19, "shirt_highlight", "outline_light", "outline_light")
+    p += _row(18, 8, 21, "shirt", "outline_light", "outline_light")   # shoulder flare
+    p += _row(19, 8, 21, "shirt", "outline_light", "outline_light")   # shoulders
+    p += _row(20, 9, 20, "shirt")         # 12px
+    p += _row(21, 9, 20, "shirt")         # 12px
+    p += _row(22, 10, 19, "belt")         # Belt line
+    p += _row(23, 10, 19, "shirt_shade")  # waist
+    p += _row(24, 10, 19, "shirt_shade")  # hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -1094,6 +1179,8 @@ def render_frame(direction: str, frame_idx: int, palette: dict,
 
 def build_spritesheet(palette: dict, hair_style: str = "short") -> tuple[Image.Image, dict]:
     """Build the full spritesheet."""
+    # Derive enhanced palette with catchlights, highlights, belt, sel-out colors
+    palette = _derive_palette(palette)
     cols = FRAMES_PER_DIR
     rows = len(ANIMATIONS) * len(DIRECTIONS)
     sheet_w = cols * FRAME_W
@@ -1136,7 +1223,7 @@ def build_atlas(sprite_name: str, image_file: str, frames_meta: dict, sheet_size
         "animations": anim_groups,
         "meta": {
             "app": "sprite-generator",
-            "version": "8.0",
+            "version": "9.0",
             "image": image_file,
             "format": "RGBA8888",
             "size": {"w": sheet_size[0], "h": sheet_size[1]},
@@ -1206,7 +1293,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v8 — 32x32 balanced chibi ({TILE_SIZE}px grid, {scale}x render)</p>
+<p class="info">v9 — 32x32 enhanced face + torso ({TILE_SIZE}px grid, {scale}x render)</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
