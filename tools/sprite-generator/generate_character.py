@@ -180,7 +180,8 @@ def _derive_palette(preset: dict) -> dict:
     """Derive additional colors from a base preset for enhanced rendering.
 
     Adds: eye_highlight, eye_white, skin_highlight, shirt_highlight,
-          belt, outline_light (sel-out), skin_aa, shirt_aa (curve smoothing).
+          belt, outline_light (sel-out), skin_aa, shirt_aa (curve smoothing),
+          nose_shadow (subtle nose dot), mouth (muted lip line).
     """
     pal = dict(preset)
 
@@ -243,6 +244,24 @@ def _derive_palette(preset: dict) -> dict:
         (olg + tg) // 2,
         (olb + tb) // 2,
         ta,
+    )
+
+    # Nose shadow — midpoint between skin and skin_shade (very subtle)
+    sdr, sdg, sdb, sda = pal["skin_shade"]
+    pal["nose_shadow"] = (
+        (sr + sdr) // 2,
+        (sg + sdg) // 2,
+        (sb + sdb) // 2,
+        sa,
+    )
+
+    # Mouth — darker than skin_shade, muted warm pink-brown
+    # Shift skin_shade toward rose/warm and darken further
+    pal["mouth"] = (
+        max(sdr - 30, 0),
+        max(sdg - 40, 0),
+        max(sdb - 30, 0),
+        sa,
     )
 
     return pal
@@ -566,6 +585,15 @@ def _build_body_down():
     p.append((12, 11, "eye_white"))       # left eye: sclera lower-right
     p.append((19, 10, "eye_highlight"))   # right eye: catchlight upper-left
     p.append((20, 10, "eye"))             # right eye: dark upper-right
+
+    # Nose — single pixel shadow dot, centered below eyes at y=12
+    # Subtle: uses nose_shadow (midpoint skin/skin_shade), not black
+    p.append((15, 12, "nose_shadow"))
+
+    # Mouth — 2px horizontal line at y=13 (between nose and chin shadow)
+    # Uses muted warm brown-pink, darker than skin_shade
+    p.append((15, 13, "mouth"))
+    p.append((16, 13, "mouth"))
     p.append((19, 11, "eye_white"))       # right eye: sclera lower-left
     p.append((20, 11, "eye"))             # right eye: dark lower-right
 
@@ -681,6 +709,13 @@ def _build_body_left():
     p.append((10, 10, "eye_highlight"))   # catchlight upper-right
     p.append((9, 11, "eye"))              # dark lower-left
     p.append((10, 11, "eye_white"))       # sclera lower-right
+
+    # Nose — 1px bump on front edge of face profile at y=12
+    # Extends 1px forward from face edge for profile silhouette
+    p.append((5, 12, "nose_shadow"))
+
+    # Mouth — 1px on front edge at y=13
+    p.append((6, 13, "mouth"))
 
     # --- Torso (side, smooth taper) ---
     p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
