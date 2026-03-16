@@ -468,9 +468,9 @@ DEFAULT_HAIR = ["short", "short", "short", "short", "long", "ponytail", "spiky",
 # BODY TEMPLATES — 32x32 balanced chibi
 #
 # Layout (front-facing):
-#   y 0-4:   hair overflow above head
-#   y 5-6:   head top / hair overlap
-#   y 7-12:  head full width (eyes at y=10)
+#   y 0-3:   hair overflow above head
+#   y 4-6:   head top / hair overlap (smooth oval cap)
+#   y 7-12:  head full width (eyes at y=10-11)
 #   y 13-15: lower face, chin
 #   y 16-17: neck / upper torso (8-12px)
 #   y 18-19: shoulder flare (14px — step-out)
@@ -500,16 +500,18 @@ def _build_body_down():
     """Facing down (toward camera)."""
     p = []
 
-    # --- Head (oval, 18px wide max) ---
-    # Sel-out: top of head uses outline_light (light falls from above)
-    p += _row(5, 11, 20, "skin", "outline_light", "outline_light")   # 10px - top
-    p += _row(6, 9, 22, "skin", "outline_light", "outline_light")    # 14px
-    p += _row(7, 8, 23, "skin")          # 16px
+    # --- Head (smooth oval, 18px wide max) ---
+    # Width progression: 8→12→14→16→18→18→18→18→18→16→14→12
+    # Steps: +4,+2,+2,+2 at top (covered by hair), -2,-2,-2 at bottom (smooth)
+    p += _row(4, 12, 19, "skin", "outline_light", "outline_light")    #  8px - tiny cap
+    p += _row(5, 10, 21, "skin", "outline_light", "outline_light")    # 12px
+    p += _row(6, 9, 22, "skin", "outline_light", "outline_light")     # 14px
+    p += _row(7, 8, 23, "skin")           # 16px
     for y in range(8, 13):
-        p += _row(y, 7, 24, "skin")      # 18px - full width
-    p += _row(13, 8, 23, "skin_shade")   # 16px
-    p += _row(14, 9, 22, "skin_shade")   # 14px
-    p += _row(15, 11, 20, "skin_shade")  # 10px - chin
+        p += _row(y, 7, 24, "skin")       # 18px - full width
+    p += _row(13, 8, 23, "skin_shade")    # 16px
+    p += _row(14, 9, 22, "skin_shade")    # 14px
+    p += _row(15, 10, 21, "skin_shade")   # 12px - chin (was 10px, now 12px)
 
     # Forehead highlight (y=8, between hair and eyes)
     for x in range(12, 20):
@@ -529,17 +531,18 @@ def _build_body_down():
     p.append((20, 11, "eye"))             # iris/pupil lower-left
     p.append((21, 11, "eye_white"))       # sclera lower-right
 
-    # --- Torso / Shirt (shoulder step-out + waist taper) ---
+    # --- Torso / Shirt (smooth shoulder-to-waist taper) ---
+    # Width: 8→10→14→14→12→12→10→10→10 (added intermediate row)
     # Sel-out: shoulders use outline_light, waist keeps dark outline
     p += _row(16, 12, 19, "shirt_shade")  # 8px - neck (head shadow)
-    p += _row(17, 10, 21, "shirt_highlight", "outline_light", "outline_light")  # highlight strip
-    p += _row(18, 9, 22, "shirt", "outline_light", "outline_light")   # shoulder flare
-    p += _row(19, 9, 22, "shirt", "outline_light", "outline_light")   # shoulders
+    p += _row(17, 11, 20, "shirt_highlight", "outline_light", "outline_light")  # 10px highlight
+    p += _row(18, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
+    p += _row(19, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulders
     p += _row(20, 10, 21, "shirt")        # 12px
     p += _row(21, 10, 21, "shirt")        # 12px
-    p += _row(22, 11, 20, "belt")         # Belt line — breaks upper/lower torso
-    p += _row(23, 11, 20, "shirt_shade")  # 10px - waist
-    p += _row(24, 11, 20, "shirt_shade")  # 10px - hips
+    p += _row(22, 11, 20, "belt")         # 10px belt line
+    p += _row(23, 11, 20, "shirt_shade")  # 10px waist
+    p += _row(24, 11, 20, "shirt_shade")  # 10px hips
 
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
@@ -549,27 +552,27 @@ def _build_body_up():
     """Facing up (away from camera). No eyes."""
     p = []
 
-    # --- Head (back, all skin_shade) ---
-    # Sel-out: top of head still catches light from above
-    p += _row(5, 11, 20, "skin_shade", "outline_light", "outline_light")
-    p += _row(6, 9, 22, "skin_shade", "outline_light", "outline_light")
-    p += _row(7, 8, 23, "skin_shade")
+    # --- Head (smooth oval, back view — all skin_shade) ---
+    p += _row(4, 12, 19, "skin_shade", "outline_light", "outline_light")   #  8px
+    p += _row(5, 10, 21, "skin_shade", "outline_light", "outline_light")   # 12px
+    p += _row(6, 9, 22, "skin_shade", "outline_light", "outline_light")    # 14px
+    p += _row(7, 8, 23, "skin_shade")    # 16px
     for y in range(8, 13):
-        p += _row(y, 7, 24, "skin_shade")
-    p += _row(13, 8, 23, "skin_shade")
-    p += _row(14, 9, 22, "skin_shade")
-    p += _row(15, 11, 20, "skin_shade")
+        p += _row(y, 7, 24, "skin_shade")  # 18px
+    p += _row(13, 8, 23, "skin_shade")   # 16px
+    p += _row(14, 9, 22, "skin_shade")   # 14px
+    p += _row(15, 10, 21, "skin_shade")  # 12px
 
-    # --- Torso (back, shoulder step-out + waist taper) ---
-    p += _row(16, 12, 19, "shirt_shade")       # neck (head shadow)
-    p += _row(17, 10, 21, "shirt_shade")       # widening
-    p += _row(18, 9, 22, "shirt_shade", "outline_light", "outline_light")  # shoulders
-    p += _row(19, 9, 22, "shirt_shade", "outline_light", "outline_light")  # shoulders
-    p += _row(20, 10, 21, "shirt_shade")
-    p += _row(21, 10, 21, "shirt_shade")
-    p += _row(22, 11, 20, "belt")              # Belt line
-    p += _row(23, 11, 20, "shirt_shade")       # waist
-    p += _row(24, 11, 20, "shirt_shade")       # hips
+    # --- Torso (back, smooth taper) ---
+    p += _row(16, 12, 19, "shirt_shade")       #  8px neck
+    p += _row(17, 11, 20, "shirt_shade")       # 10px widening
+    p += _row(18, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
+    p += _row(19, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
+    p += _row(20, 10, 21, "shirt_shade")  # 12px
+    p += _row(21, 10, 21, "shirt_shade")  # 12px
+    p += _row(22, 11, 20, "belt")         # 10px belt
+    p += _row(23, 11, 20, "shirt_shade")  # 10px waist
+    p += _row(24, 11, 20, "shirt_shade")  # 10px hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -579,19 +582,19 @@ def _build_body_left():
     """Facing left — side profile."""
     p = []
 
-    # --- Head (side, shifted slightly left) ---
-    # Sel-out: top of head uses lighter outline
-    p += _row(5, 10, 19, "skin", "outline_light", "outline_light")
-    p += _row(6, 8, 21, "skin", "outline_light", "outline_light")
-    p += _row(7, 7, 22, "skin")
+    # --- Head (smooth oval, side view — shifted slightly left) ---
+    p += _row(4, 11, 18, "skin", "outline_light", "outline_light")    #  8px - tiny cap
+    p += _row(5, 9, 20, "skin", "outline_light", "outline_light")     # 12px
+    p += _row(6, 8, 21, "skin", "outline_light", "outline_light")     # 14px
+    p += _row(7, 7, 22, "skin")           # 16px
     for y in range(8, 13):
-        p += _row(y, 6, 23, "skin")      # 18px
-    p += _row(13, 7, 22, "skin_shade")
-    p += _row(14, 8, 21, "skin_shade")
-    p += _row(15, 10, 19, "skin_shade")
+        p += _row(y, 6, 23, "skin")       # 18px
+    p += _row(13, 7, 22, "skin_shade")    # 16px
+    p += _row(14, 8, 21, "skin_shade")    # 14px
+    p += _row(15, 9, 20, "skin_shade")    # 12px
 
     # Forehead highlight
-    for x in range(11, 18):
+    for x in range(10, 18):
         p.append((x, 8, "skin_highlight"))
 
     # One eye visible (left side) — 2x2 with catchlight
@@ -602,17 +605,16 @@ def _build_body_left():
     p.append((9, 11, "eye_white"))        # sclera lower-left
     p.append((10, 11, "eye"))             # iris lower-right
 
-    # --- Torso (side, shoulder step-out + waist taper) ---
-    # Sel-out: top of shoulders uses lighter outline
-    p += _row(16, 11, 18, "shirt_shade")  # neck (head shadow)
-    p += _row(17, 10, 19, "shirt_highlight", "outline_light", "outline_light")
-    p += _row(18, 8, 21, "shirt", "outline_light", "outline_light")   # shoulder flare
-    p += _row(19, 8, 21, "shirt", "outline_light", "outline_light")   # shoulders
+    # --- Torso (side, smooth taper) ---
+    p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
+    p += _row(17, 10, 19, "shirt_highlight", "outline_light", "outline_light")  # 10px
+    p += _row(18, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
+    p += _row(19, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulders
     p += _row(20, 9, 20, "shirt")         # 12px
     p += _row(21, 9, 20, "shirt")         # 12px
-    p += _row(22, 10, 19, "belt")         # Belt line
-    p += _row(23, 10, 19, "shirt_shade")  # waist
-    p += _row(24, 10, 19, "shirt_shade")  # hips
+    p += _row(22, 10, 19, "belt")         # 10px belt
+    p += _row(23, 10, 19, "shirt_shade")  # 10px waist
+    p += _row(24, 10, 19, "shirt_shade")  # 10px hips
 
     # Legs are drawn by the leg pose system.
     return p
@@ -644,20 +646,27 @@ BODY_TEMPLATES = {
 # ---------------------------------------------------------------------------
 
 def _build_standing_legs_down():
-    # 2px gap between legs (x=15-16 empty) for readability
+    """Front-view standing legs with thigh-to-calf taper and 2px gap."""
+    # Each leg: 5px wide at thigh (y=25), 4px at mid (y=26-27), shoe 4px
+    # Left leg: x=11-15(thigh), x=11-14(calf), x=11-14(shoe)
+    # Right leg: x=16-20(thigh), x=17-20(calf), x=17-20(shoe)
     return (
-        _row(25, 11, 14, "pants") + _row(25, 17, 20, "pants") +
+        # Thigh (wider, slight overlap at gap — creates hip shape)
+        _row(25, 11, 15, "pants") + _row(25, 16, 20, "pants") +
+        # Upper leg
         _row(26, 11, 14, "pants") + _row(26, 17, 20, "pants") +
+        # Knee area (shaded)
         _row(27, 11, 14, "pants_shade") + _row(27, 17, 20, "pants_shade") +
+        # Calf/ankle (slightly narrower)
         _row(28, 11, 14, "shoes") + _row(28, 17, 20, "shoes") +
         _row(29, 11, 14, "shoes_shade") + _row(29, 17, 20, "shoes_shade")
     )
 
 
 def _build_standing_legs_up():
-    # 2px gap between legs (x=15-16 empty) for readability
+    """Back-view standing legs (all shaded) with thigh-to-calf taper."""
     return (
-        _row(25, 11, 14, "pants_shade") + _row(25, 17, 20, "pants_shade") +
+        _row(25, 11, 15, "pants_shade") + _row(25, 16, 20, "pants_shade") +
         _row(26, 11, 14, "pants_shade") + _row(26, 17, 20, "pants_shade") +
         _row(27, 11, 14, "pants_shade") + _row(27, 17, 20, "pants_shade") +
         _row(28, 11, 14, "shoes_shade") + _row(28, 17, 20, "shoes_shade") +
@@ -666,13 +675,14 @@ def _build_standing_legs_up():
 
 
 def _build_standing_legs_left():
-    # Centered on torso (torso center ~14.5, legs center 14.5)
+    """Side-view standing legs — two legs overlapping, shaped thigh-to-calf."""
+    # Thigh: 8px wide (torso width), tapers to 6px calf, 6px shoe
     return (
-        _row(25, 11, 18, "pants") +
-        _row(26, 11, 18, "pants") +
-        _row(27, 11, 18, "pants_shade") +
-        _row(28, 10, 18, "shoes") +
-        _row(29, 10, 18, "shoes_shade")
+        _row(25, 11, 18, "pants") +       # 8px thigh (matches hips)
+        _row(26, 11, 17, "pants") +        # 7px upper leg
+        _row(27, 12, 17, "pants_shade") +  # 6px knee (narrowing)
+        _row(28, 12, 17, "shoes") +        # 6px calf/ankle
+        _row(29, 11, 17, "shoes_shade")    # 7px shoe (wider sole)
     )
 
 
@@ -684,37 +694,72 @@ _STANDING_LEGS = {
 }
 
 # --- Walk stride poses (per-frame, absolute pixel positions) ---
+#
+# Side-view walk cycle: 4 distinct poses for natural movement.
+# Each individual leg is ~4px wide with thigh→calf taper.
+# The walk reads as: contact → passing → stride → passing
+#
+# F0: Contact — right leg forward, left leg back (slight split)
+# F1: Passing — legs overlap, right leg swinging past left
+# F2: Contact — left leg forward, right leg back (mirror of F0)
+# F3: Passing — legs overlap, left leg swinging past right
 
-# DOWN/UP WALK: use standing legs (no horizontal spread); the existing
-# ANIM_OFFSETS leg_l / leg_r Y-shifts handle the subtle bob.
+# DOWN/UP WALK: use standing legs + ANIM_OFFSETS per-leg Y-shifts
 _walk_down_stand = _STANDING_LEGS["down"]
 _walk_up_stand = _STANDING_LEGS["up"]
 
-# LEFT-FACING WALK: centered on torso (center ~14.5).
-# y=25-26: waist/thigh area stays as solid block (no split).
-# y=27-29: legs split and rotate apart. Each stride leg is 6px wide.
-_walk_left_f0 = _STANDING_LEGS["left"]
+# LEFT-FACING WALK: 4 distinct poses for smooth animation
+# Center of legs area ≈ x=14.5, torso hips at x=10-19
 
-_walk_left_stride = (
-    # Waist + thigh (y=25-26): solid block, same as standing
+# F0: Contact — legs slightly apart, front foot forward, back foot behind
+_walk_left_f0 = (
+    # Hip connection (solid)
     _row(25, 11, 18, "pants") +
-    _row(26, 11, 18, "pants") +
-    # Lower legs split: back leg drawn first, front leg on top
-    # Back leg (rotates backward, each row +1px right from y=27 base)
-    _row(27, 14, 19, "pants_shade") +   # 6px, starts splitting
-    _row(28, 15, 20, "shoes") +          # 6px, +1px right
-    _row(29, 15, 20, "shoes_shade") +    # 6px, foot plants
-    # Front leg (rotates forward, each row -1px left from y=27 base)
-    _row(27, 9, 14, "pants_shade") +     # 6px, starts splitting
-    _row(28, 8, 13, "shoes") +           # 6px, -1px left
-    _row(29, 8, 13, "shoes_shade")       # 6px, foot plants
+    # Front leg (left/forward): x=9-13
+    _row(26, 9, 13, "pants") +
+    _row(27, 9, 12, "pants_shade") +
+    _row(28, 9, 12, "shoes") +
+    _row(29, 8, 12, "shoes_shade") +
+    # Back leg (right/behind): x=14-18
+    _row(26, 14, 18, "pants") +
+    _row(27, 15, 18, "pants_shade") +
+    _row(28, 16, 18, "shoes") +
+    _row(29, 16, 19, "shoes_shade")
 )
 
-_walk_left_f2 = _STANDING_LEGS["left"]
+# F1: Passing — legs overlap in center, one lifting
+_walk_left_f1 = (
+    _row(25, 11, 18, "pants") +
+    _row(26, 11, 17, "pants") +
+    _row(27, 12, 17, "pants_shade") +
+    _row(28, 12, 17, "shoes") +
+    _row(29, 11, 17, "shoes_shade")
+)
 
-# F1 and F3 look identical from side view (different leg leads, same shape)
-_walk_left_f1 = _walk_left_stride
-_walk_left_f3 = _walk_left_stride
+# F2: Contact — mirror stride (other leg forward)
+_walk_left_f2 = (
+    # Hip connection
+    _row(25, 11, 18, "pants") +
+    # Back leg (left/behind): x=14-18
+    _row(26, 14, 18, "pants") +
+    _row(27, 15, 18, "pants_shade") +
+    _row(28, 16, 18, "shoes") +
+    _row(29, 16, 19, "shoes_shade") +
+    # Front leg (right/forward): x=9-13
+    _row(26, 9, 13, "pants") +
+    _row(27, 9, 12, "pants_shade") +
+    _row(28, 9, 12, "shoes") +
+    _row(29, 8, 12, "shoes_shade")
+)
+
+# F3: Passing — legs overlap again (other direction)
+_walk_left_f3 = (
+    _row(25, 11, 18, "pants") +
+    _row(26, 11, 17, "pants") +
+    _row(27, 12, 17, "pants_shade") +
+    _row(28, 12, 17, "shoes") +
+    _row(29, 11, 17, "shoes_shade")
+)
 
 # RIGHT-FACING WALK: mirror of left
 def _mirror_legs(poses):
