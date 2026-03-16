@@ -526,17 +526,24 @@ def _build_body_down():
     p += _row(5, 10, 21, "skin", "outline_light", "outline_light")    # 12px
     p += _row(6, 9, 22, "skin", "outline_light", "outline_light")     # 14px
     p += _row(7, 8, 23, "skin")           # 16px
-    for y in range(8, 13):
-        p += _row(y, 7, 24, "skin")       # 18px - full width
-    # Chin rows: mostly skin, with shade only at edges for roundness
-    p += _row(13, 8, 23, "skin")          # 16px - still base skin
-    p += _row(14, 9, 22, "skin_shade")    # 14px - shadow starts here (chin underside)
+    for y in range(8, 11):
+        p += _row(y, 7, 24, "skin")       # 18px - well-lit upper face
+    # y=11-12: crescent side-shadow (outer 2px each side become shade)
+    # This creates a C-shaped shadow wrapping around the sphere of the head
+    for y in range(11, 13):
+        row = _row(y, 7, 24, "skin")
+        for i, (px, py, pc) in enumerate(row):
+            if pc == "skin" and (px <= 8 or px >= 23):
+                row[i] = (px, py, "skin_shade")
+        p += row
+    # Chin rows: full shade on bottom 2 rows
+    p += _row(13, 8, 23, "skin")          # 16px - transitional (mostly base)
+    p += _row(14, 9, 22, "skin_shade")    # 14px - chin underside
     p += _row(15, 10, 21, "skin_shade")   # 12px - bottom of chin
 
-    # Subtle right-edge shadow (light from top-left): a few shade pixels
-    # along the right side of the face at mid-height
-    for y in range(10, 13):
-        p.append((24, y, "skin_shade"))   # rightmost column shade
+    # Shade on y=13 outer pixels for smooth crescent fade into chin
+    p.append((8, 13, "skin_shade"))
+    p.append((23, 13, "skin_shade"))
 
     # Manual AA on chin curve inner corners (where width steps down)
     p.append((8, 14, "skin_aa"))    # left inner corner (18→16 step)
@@ -597,9 +604,18 @@ def _build_body_up():
     p += _row(5, 10, 21, "skin", "outline_light", "outline_light")   # 12px
     p += _row(6, 9, 22, "skin", "outline_light", "outline_light")    # 14px
     p += _row(7, 8, 23, "skin")          # 16px
-    for y in range(8, 13):
-        p += _row(y, 7, 24, "skin")      # 18px
-    p += _row(13, 8, 23, "skin")         # 16px
+    for y in range(8, 11):
+        p += _row(y, 7, 24, "skin")      # 18px - lit from above
+    # Crescent side shadow on back of head
+    for y in range(11, 13):
+        row = _row(y, 7, 24, "skin")
+        for i, (px, py, pc) in enumerate(row):
+            if pc == "skin" and (px <= 8 or px >= 23):
+                row[i] = (px, py, "skin_shade")
+        p += row
+    p += _row(13, 8, 23, "skin")         # 16px - transitional
+    p.append((8, 13, "skin_shade"))       # outer crescent fade
+    p.append((23, 13, "skin_shade"))
     p += _row(14, 9, 22, "skin_shade")   # 14px (nape shadow)
     p += _row(15, 10, 21, "skin_shade")  # 12px (nape shadow)
 
@@ -634,15 +650,21 @@ def _build_body_left():
     p += _row(5, 9, 20, "skin", "outline_light", "outline_light")     # 12px
     p += _row(6, 8, 21, "skin", "outline_light", "outline_light")     # 14px
     p += _row(7, 7, 22, "skin")           # 16px
-    for y in range(8, 13):
-        p += _row(y, 6, 23, "skin")       # 18px
-    p += _row(13, 7, 22, "skin")          # 16px - still base skin
+    for y in range(8, 11):
+        p += _row(y, 6, 23, "skin")       # 18px - well-lit
+    # Crescent side shadow on back-of-head edge (side view)
+    for y in range(11, 13):
+        row = _row(y, 6, 23, "skin")
+        for i, (px, py, pc) in enumerate(row):
+            if pc == "skin" and px >= 22:
+                row[i] = (px, py, "skin_shade")
+        p += row
+    p += _row(13, 7, 22, "skin")          # 16px - transitional
     p += _row(14, 8, 21, "skin_shade")    # 14px - chin shadow
     p += _row(15, 9, 20, "skin_shade")    # 12px - chin bottom
 
-    # Right-edge shade (back of head from side view)
-    for y in range(10, 13):
-        p.append((23, y, "skin_shade"))
+    # Shade on y=13 outer pixel for crescent fade
+    p.append((22, 13, "skin_shade"))
 
     # Chin AA pixels (smooth stair-step transitions)
     p.append((7, 14, "skin_aa"))    # left inner corner (16→14)
