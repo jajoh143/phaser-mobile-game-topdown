@@ -54,8 +54,8 @@ PRESETS = [
         "hair_highlight": (75, 80, 150, 255),
         "shirt": (190, 60, 55, 255),
         "shirt_shade": (148, 38, 55, 255),         # red shifted toward maroon
-        "pants": (70, 65, 80, 255),
-        "pants_shade": (48, 42, 68, 255),          # shifted toward blue
+        "pants": (60, 75, 135, 255),               # blue jeans
+        "pants_shade": (40, 52, 108, 255),         # shifted toward deeper blue
         "shoes": (55, 45, 40, 255),
         "shoes_shade": (38, 30, 38, 255),          # shifted toward purple
         "outline": (25, 20, 42, 255),              # dark navy-purple
@@ -86,8 +86,8 @@ PRESETS = [
         "hair_highlight": (242, 245, 248, 255),
         "shirt": (140, 210, 185, 255),
         "shirt_shade": (105, 172, 165, 255),       # mint shifted toward teal
-        "pants": (100, 170, 148, 255),
-        "pants_shade": (72, 135, 130, 255),        # shifted toward blue
+        "pants": (225, 218, 205, 255),             # cream / khaki
+        "pants_shade": (192, 182, 168, 255),       # shifted toward warm grey
         "shoes": (52, 42, 38, 255),
         "shoes_shade": (36, 28, 32, 255),          # shifted toward cool
         "outline": (22, 24, 40, 255),              # dark slate-blue
@@ -102,8 +102,8 @@ PRESETS = [
         "hair_highlight": (225, 110, 55, 255),
         "shirt": (140, 100, 65, 255),
         "shirt_shade": (108, 72, 55, 255),         # brown shifted toward olive
-        "pants": (120, 85, 55, 255),
-        "pants_shade": (92, 60, 45, 255),          # shifted toward warm brown
+        "pants": (95, 75, 52, 255),                # darker brown leather
+        "pants_shade": (68, 50, 38, 255),          # shifted toward warm brown
         "shoes": (55, 42, 35, 255),
         "shoes_shade": (38, 28, 30, 255),          # shifted toward maroon
         "outline": (32, 20, 22, 255),              # dark brown-red
@@ -134,8 +134,8 @@ PRESETS = [
         "hair_highlight": (128, 98, 68, 255),
         "shirt": (75, 140, 72, 255),
         "shirt_shade": (50, 108, 62, 255),         # green shifted toward teal
-        "pants": (65, 62, 78, 255),
-        "pants_shade": (42, 40, 65, 255),          # shifted toward blue
+        "pants": (140, 120, 85, 255),              # tan / sandy
+        "pants_shade": (108, 88, 62, 255),         # shifted toward warm brown
         "shoes": (52, 42, 36, 255),
         "shoes_shade": (35, 28, 30, 255),          # shifted toward cool
         "outline": (25, 22, 28, 255),              # dark olive-grey
@@ -166,8 +166,8 @@ PRESETS = [
         "hair_highlight": (238, 150, 168, 255),
         "shirt": (232, 232, 238, 255),
         "shirt_shade": (198, 195, 215, 255),       # shifted toward cool grey-blue
-        "pants": (65, 65, 78, 255),
-        "pants_shade": (45, 42, 65, 255),          # shifted toward blue
+        "pants": (55, 55, 68, 255),                # dark charcoal (chef's pants)
+        "pants_shade": (38, 35, 55, 255),          # shifted toward blue-grey
         "shoes": (52, 42, 38, 255),
         "shoes_shade": (36, 28, 32, 255),          # shifted toward cool
         "outline": (25, 18, 35, 255),              # dark rose-purple
@@ -519,42 +519,48 @@ def _build_body_down():
 
     # --- Head (smooth oval, 18px wide max) ---
     # Width progression: 8→12→14→16→18→18→18→18→18→16→14→12
-    # Steps: +4,+2,+2,+2 at top (covered by hair), -2,-2,-2 at bottom (smooth)
+    # Shading: directional light from top-left. Most face is base skin.
+    # Shadow only on bottom 2 rows of chin and a few pixels on the right edge.
+    # This avoids the harsh two-tone "pillow shading" look.
     p += _row(4, 12, 19, "skin", "outline_light", "outline_light")    #  8px - tiny cap
     p += _row(5, 10, 21, "skin", "outline_light", "outline_light")    # 12px
     p += _row(6, 9, 22, "skin", "outline_light", "outline_light")     # 14px
     p += _row(7, 8, 23, "skin")           # 16px
     for y in range(8, 13):
         p += _row(y, 7, 24, "skin")       # 18px - full width
-    p += _row(13, 8, 23, "skin_shade")    # 16px
-    p += _row(14, 9, 22, "skin_shade")    # 14px
-    p += _row(15, 10, 21, "skin_shade")   # 12px - chin
+    # Chin rows: mostly skin, with shade only at edges for roundness
+    p += _row(13, 8, 23, "skin")          # 16px - still base skin
+    p += _row(14, 9, 22, "skin_shade")    # 14px - shadow starts here (chin underside)
+    p += _row(15, 10, 21, "skin_shade")   # 12px - bottom of chin
+
+    # Subtle right-edge shadow (light from top-left): a few shade pixels
+    # along the right side of the face at mid-height
+    for y in range(10, 13):
+        p.append((24, y, "skin_shade"))   # rightmost column shade
 
     # Manual AA on chin curve inner corners (where width steps down)
-    # y=13: 16px→ y=14: 14px — AA at inside corners of the step
-    p.append((8, 14, "skin_aa"))    # left inner corner (was transparent)
+    p.append((8, 14, "skin_aa"))    # left inner corner (18→16 step)
     p.append((23, 14, "skin_aa"))   # right inner corner
-    # y=14: 14px→ y=15: 12px
-    p.append((9, 15, "skin_aa"))    # left inner corner
+    p.append((9, 15, "skin_aa"))    # left inner corner (16→14 step)
     p.append((22, 15, "skin_aa"))   # right inner corner
 
-    # Forehead highlight (y=8, between hair and eyes)
-    for x in range(12, 20):
+    # Forehead highlight (y=8, between hair and eyes — smaller, left-biased)
+    for x in range(11, 18):
         p.append((x, 8, "skin_highlight"))
 
-    # Eyes (2x2 with catchlight) — at y=10-11 (lowered for 3/4 top-down)
-    #   Layout per eye:  [highlight] [eye_color]
-    #                    [eye_white] [eye_color]
-    # Left eye (x=10-11, y=10-11)
-    p.append((10, 10, "eye_highlight"))   # catchlight upper-left
-    p.append((11, 10, "eye"))             # iris/pupil upper-right
-    p.append((10, 11, "eye_white"))       # sclera lower-left
-    p.append((11, 11, "eye"))             # iris/pupil lower-right
-    # Right eye (x=20-21, y=10-11)
-    p.append((20, 10, "eye"))             # iris/pupil upper-left
-    p.append((21, 10, "eye_highlight"))   # catchlight upper-right
-    p.append((20, 11, "eye"))             # iris/pupil lower-left
-    p.append((21, 11, "eye_white"))       # sclera lower-right
+    # Eyes — 2w x 2h per eye with catchlight, placed at y=10-11
+    # Chibi-style: eyes closer together for cute proportions.
+    # Left eye (x=11-12), Right eye (x=19-20) — 6px gap between eyes
+    #   [eye]       [highlight]
+    #   [eye_white] [eye]
+    p.append((11, 10, "eye"))             # left eye: dark upper-left
+    p.append((12, 10, "eye_highlight"))   # left eye: catchlight upper-right
+    p.append((11, 11, "eye"))             # left eye: dark lower-left
+    p.append((12, 11, "eye_white"))       # left eye: sclera lower-right
+    p.append((19, 10, "eye_highlight"))   # right eye: catchlight upper-left
+    p.append((20, 10, "eye"))             # right eye: dark upper-right
+    p.append((19, 11, "eye_white"))       # right eye: sclera lower-left
+    p.append((20, 11, "eye"))             # right eye: dark lower-right
 
     # --- Torso / Shirt (smooth shoulder-to-waist taper) ---
     # Width: 8→10→14→14→12→12→10→10→10 (added intermediate row)
@@ -566,8 +572,8 @@ def _build_body_down():
     p += _row(20, 10, 21, "shirt")        # 12px
     p += _row(21, 10, 21, "shirt")        # 12px
     p += _row(22, 11, 20, "belt")         # 10px belt line
-    p += _row(23, 11, 20, "shirt_shade")  # 10px waist
-    p += _row(24, 11, 20, "shirt_shade")  # 10px hips
+    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
+    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
 
     # Torso AA: smooth the shoulder flare (10→14) outer corners
     p.append((10, 18, "shirt_aa"))   # left shoulder inner corner
@@ -584,16 +590,18 @@ def _build_body_up():
     """Facing up (away from camera). No eyes."""
     p = []
 
-    # --- Head (smooth oval, back view — all skin_shade) ---
-    p += _row(4, 12, 19, "skin_shade", "outline_light", "outline_light")   #  8px
-    p += _row(5, 10, 21, "skin_shade", "outline_light", "outline_light")   # 12px
-    p += _row(6, 9, 22, "skin_shade", "outline_light", "outline_light")    # 14px
-    p += _row(7, 8, 23, "skin_shade")    # 16px
+    # --- Head (smooth oval, back view) ---
+    # Back of head: mostly base skin with subtle shade on lower portion
+    # (hair covers top, so less skin visible; nape of neck is shadowed)
+    p += _row(4, 12, 19, "skin", "outline_light", "outline_light")   #  8px
+    p += _row(5, 10, 21, "skin", "outline_light", "outline_light")   # 12px
+    p += _row(6, 9, 22, "skin", "outline_light", "outline_light")    # 14px
+    p += _row(7, 8, 23, "skin")          # 16px
     for y in range(8, 13):
-        p += _row(y, 7, 24, "skin_shade")  # 18px
-    p += _row(13, 8, 23, "skin_shade")   # 16px
-    p += _row(14, 9, 22, "skin_shade")   # 14px
-    p += _row(15, 10, 21, "skin_shade")  # 12px
+        p += _row(y, 7, 24, "skin")      # 18px
+    p += _row(13, 8, 23, "skin")         # 16px
+    p += _row(14, 9, 22, "skin_shade")   # 14px (nape shadow)
+    p += _row(15, 10, 21, "skin_shade")  # 12px (nape shadow)
 
     # Chin AA (back view)
     p.append((8, 14, "skin_aa"))
@@ -609,8 +617,8 @@ def _build_body_up():
     p += _row(20, 10, 21, "shirt_shade")  # 12px
     p += _row(21, 10, 21, "shirt_shade")  # 12px
     p += _row(22, 11, 20, "belt")         # 10px belt
-    p += _row(23, 11, 20, "shirt_shade")  # 10px waist
-    p += _row(24, 11, 20, "shirt_shade")  # 10px hips
+    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
+    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
 
     # Legs are drawn by the leg pose system.
     return p
@@ -621,15 +629,20 @@ def _build_body_left():
     p = []
 
     # --- Head (smooth oval, side view — shifted slightly left) ---
+    # Light from top-left: left (front) face is lit, shade only on chin
     p += _row(4, 11, 18, "skin", "outline_light", "outline_light")    #  8px - tiny cap
     p += _row(5, 9, 20, "skin", "outline_light", "outline_light")     # 12px
     p += _row(6, 8, 21, "skin", "outline_light", "outline_light")     # 14px
     p += _row(7, 7, 22, "skin")           # 16px
     for y in range(8, 13):
         p += _row(y, 6, 23, "skin")       # 18px
-    p += _row(13, 7, 22, "skin_shade")    # 16px
-    p += _row(14, 8, 21, "skin_shade")    # 14px
-    p += _row(15, 9, 20, "skin_shade")    # 12px
+    p += _row(13, 7, 22, "skin")          # 16px - still base skin
+    p += _row(14, 8, 21, "skin_shade")    # 14px - chin shadow
+    p += _row(15, 9, 20, "skin_shade")    # 12px - chin bottom
+
+    # Right-edge shade (back of head from side view)
+    for y in range(10, 13):
+        p.append((23, y, "skin_shade"))
 
     # Chin AA pixels (smooth stair-step transitions)
     p.append((7, 14, "skin_aa"))    # left inner corner (16→14)
@@ -637,17 +650,15 @@ def _build_body_left():
     p.append((8, 15, "skin_aa"))    # left inner corner (14→12)
     p.append((21, 15, "skin_aa"))   # right inner corner
 
-    # Forehead highlight
-    for x in range(10, 18):
+    # Forehead highlight (left-biased for side view)
+    for x in range(9, 16):
         p.append((x, 8, "skin_highlight"))
 
-    # One eye visible (left side) — 2x2 with catchlight
-    #   [highlight] [eye]
-    #   [eye_white] [eye]
-    p.append((9, 10, "eye_highlight"))    # catchlight upper-left
-    p.append((10, 10, "eye"))             # iris upper-right
-    p.append((9, 11, "eye_white"))        # sclera lower-left
-    p.append((10, 11, "eye"))             # iris lower-right
+    # One eye visible (left side) — 2x2 with catchlight, placed toward front of face
+    p.append((9, 10, "eye"))              # dark upper-left
+    p.append((10, 10, "eye_highlight"))   # catchlight upper-right
+    p.append((9, 11, "eye"))              # dark lower-left
+    p.append((10, 11, "eye_white"))       # sclera lower-right
 
     # --- Torso (side, smooth taper) ---
     p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
@@ -657,8 +668,8 @@ def _build_body_left():
     p += _row(20, 9, 20, "shirt")         # 12px
     p += _row(21, 9, 20, "shirt")         # 12px
     p += _row(22, 10, 19, "belt")         # 10px belt
-    p += _row(23, 10, 19, "shirt_shade")  # 10px waist
-    p += _row(24, 10, 19, "shirt_shade")  # 10px hips
+    p += _row(23, 10, 19, "pants")        # 10px waist (matches pants)
+    p += _row(24, 10, 19, "pants")        # 10px hips (matches pants)
 
     # Torso AA: shoulder flare and under-arm transitions
     p.append((9, 18, "shirt_aa"))   # left shoulder inner corner
