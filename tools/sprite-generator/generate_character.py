@@ -180,7 +180,7 @@ def _derive_palette(preset: dict) -> dict:
     """Derive additional colors from a base preset for enhanced rendering.
 
     Adds: eye_highlight, eye_white, skin_highlight, shirt_highlight,
-          belt, outline_light (for sel-out on light-facing edges).
+          belt, outline_light (sel-out), skin_aa, shirt_aa (curve smoothing).
     """
     pal = dict(preset)
 
@@ -226,6 +226,23 @@ def _derive_palette(preset: dict) -> dict:
         min(olg + 35, 180),
         min(olb + 35, 180),
         ola,
+    )
+
+    # Manual AA color — midpoint between outline and skin, for smoothing
+    # stair-step transitions on the head/chin curves
+    pal["skin_aa"] = (
+        (olr + sr) // 2,
+        (olg + sg) // 2,
+        (olb + sb) // 2,
+        sa,
+    )
+
+    # AA color for shirt edge transitions
+    pal["shirt_aa"] = (
+        (olr + tr) // 2,
+        (olg + tg) // 2,
+        (olb + tb) // 2,
+        ta,
     )
 
     return pal
@@ -511,7 +528,15 @@ def _build_body_down():
         p += _row(y, 7, 24, "skin")       # 18px - full width
     p += _row(13, 8, 23, "skin_shade")    # 16px
     p += _row(14, 9, 22, "skin_shade")    # 14px
-    p += _row(15, 10, 21, "skin_shade")   # 12px - chin (was 10px, now 12px)
+    p += _row(15, 10, 21, "skin_shade")   # 12px - chin
+
+    # Manual AA on chin curve inner corners (where width steps down)
+    # y=13: 16px→ y=14: 14px — AA at inside corners of the step
+    p.append((8, 14, "skin_aa"))    # left inner corner (was transparent)
+    p.append((23, 14, "skin_aa"))   # right inner corner
+    # y=14: 14px→ y=15: 12px
+    p.append((9, 15, "skin_aa"))    # left inner corner
+    p.append((22, 15, "skin_aa"))   # right inner corner
 
     # Forehead highlight (y=8, between hair and eyes)
     for x in range(12, 20):
@@ -544,6 +569,13 @@ def _build_body_down():
     p += _row(23, 11, 20, "shirt_shade")  # 10px waist
     p += _row(24, 11, 20, "shirt_shade")  # 10px hips
 
+    # Torso AA: smooth the shoulder flare (10→14) outer corners
+    p.append((10, 18, "shirt_aa"))   # left shoulder inner corner
+    p.append((21, 18, "shirt_aa"))   # right shoulder inner corner
+    # Torso AA: smooth shoulder→mid-torso (14→12) inner corners
+    p.append((9, 20, "shirt_aa"))    # left under-arm inner corner
+    p.append((22, 20, "shirt_aa"))   # right under-arm inner corner
+
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
 
@@ -562,6 +594,12 @@ def _build_body_up():
     p += _row(13, 8, 23, "skin_shade")   # 16px
     p += _row(14, 9, 22, "skin_shade")   # 14px
     p += _row(15, 10, 21, "skin_shade")  # 12px
+
+    # Chin AA (back view)
+    p.append((8, 14, "skin_aa"))
+    p.append((23, 14, "skin_aa"))
+    p.append((9, 15, "skin_aa"))
+    p.append((22, 15, "skin_aa"))
 
     # --- Torso (back, smooth taper) ---
     p += _row(16, 12, 19, "shirt_shade")       #  8px neck
@@ -593,6 +631,12 @@ def _build_body_left():
     p += _row(14, 8, 21, "skin_shade")    # 14px
     p += _row(15, 9, 20, "skin_shade")    # 12px
 
+    # Chin AA pixels (smooth stair-step transitions)
+    p.append((7, 14, "skin_aa"))    # left inner corner (16→14)
+    p.append((22, 14, "skin_aa"))   # right inner corner
+    p.append((8, 15, "skin_aa"))    # left inner corner (14→12)
+    p.append((21, 15, "skin_aa"))   # right inner corner
+
     # Forehead highlight
     for x in range(10, 18):
         p.append((x, 8, "skin_highlight"))
@@ -615,6 +659,12 @@ def _build_body_left():
     p += _row(22, 10, 19, "belt")         # 10px belt
     p += _row(23, 10, 19, "shirt_shade")  # 10px waist
     p += _row(24, 10, 19, "shirt_shade")  # 10px hips
+
+    # Torso AA: shoulder flare and under-arm transitions
+    p.append((9, 18, "shirt_aa"))   # left shoulder inner corner
+    p.append((20, 18, "shirt_aa"))  # right shoulder inner corner
+    p.append((8, 20, "shirt_aa"))   # left under-arm inner corner
+    p.append((21, 20, "shirt_aa"))  # right under-arm inner corner
 
     # Legs are drawn by the leg pose system.
     return p
