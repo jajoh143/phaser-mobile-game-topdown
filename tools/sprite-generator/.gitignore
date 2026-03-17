@@ -1,0 +1,4 @@
+generated/*.png
+generated/*.json
+generated/*.html
+__pycache__/
