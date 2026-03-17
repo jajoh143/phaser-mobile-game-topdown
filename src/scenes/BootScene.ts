@@ -22,31 +22,87 @@ export class BootScene extends Phaser.Scene {
 
     const playerGfx = this.make.graphics({ x: 0, y: 0 })
 
-    const colors = {
+    const bodyColors = {
       down: 0x4a9ade,
       up: 0x3a7abf,
       left: 0x2a5a9f,
       right: 0x5ab0ee,
     }
 
-    const rowColors = [colors.down, colors.up, colors.left, colors.right]
+    const skin = 0xf4c2a1
+    const skinShadow = 0xc49a7a // mid-tone for nose — between skin and outline
+    const hairColor = 0x6b3a1a // dark brown hair
+    const eyeColor = 0x1a1a2e // near-black eyes
+    const legColor = 0x2d5a8e
+
+    const directions = ['down', 'up', 'left', 'right'] as const
+    const rowColors = [bodyColors.down, bodyColors.up, bodyColors.left, bodyColors.right]
 
     for (let row = 0; row < ROWS; row++) {
+      const dir = directions[row]
       const color = rowColors[row]
       for (let col = 0; col < COLS; col++) {
         const x = col * FRAME_W
         const y = row * FRAME_H
-        // Body
+
+        // --- Body (shortened by 1px so legs are more visible) ---
         playerGfx.fillStyle(color, 1)
-        playerGfx.fillRect(x + 4, y + 5, 8, 9)
-        // Head
-        playerGfx.fillStyle(0xf4c2a1, 1)
-        playerGfx.fillRect(x + 5, y + 1, 6, 5)
-        // Legs animation offset
-        const legOff = col === 1 ? -1 : col === 2 ? 1 : 0
-        playerGfx.fillStyle(0x2d5a8e, 1)
-        playerGfx.fillRect(x + 4, y + 12, 3, 3 + legOff)
-        playerGfx.fillRect(x + 9, y + 12, 3, 3 - legOff)
+        playerGfx.fillRect(x + 4, y + 6, 8, 7) // y+6 to y+12
+
+        // --- Head base (skin) ---
+        playerGfx.fillStyle(skin, 1)
+        playerGfx.fillRect(x + 5, y + 2, 6, 4) // y+2 to y+5
+
+        // --- Hair ---
+        playerGfx.fillStyle(hairColor, 1)
+        if (dir === 'up') {
+          // Back of head: hair covers entire head area
+          playerGfx.fillRect(x + 5, y + 1, 6, 5)
+        } else {
+          // Hair on top of head (2 rows)
+          playerGfx.fillRect(x + 5, y + 1, 6, 2)
+          if (dir === 'left') {
+            // Side hair on right side of sprite (back of head)
+            playerGfx.fillRect(x + 9, y + 2, 2, 2)
+          } else if (dir === 'right') {
+            // Side hair on left side of sprite (back of head)
+            playerGfx.fillRect(x + 5, y + 2, 2, 2)
+          }
+        }
+
+        // --- Facial features (direction-specific) ---
+        if (dir === 'down') {
+          // Front face: two eyes
+          playerGfx.fillStyle(eyeColor, 1)
+          playerGfx.fillRect(x + 6, y + 3, 1, 1) // left eye
+          playerGfx.fillRect(x + 9, y + 3, 1, 1) // right eye
+          // Nose: 1px mid-tone shadow dot centered below eyes
+          playerGfx.fillStyle(skinShadow, 1)
+          playerGfx.fillRect(x + 8, y + 4, 1, 1)
+        } else if (dir === 'left') {
+          // Side profile facing left: eye on left side
+          playerGfx.fillStyle(eyeColor, 1)
+          playerGfx.fillRect(x + 6, y + 3, 1, 1)
+          // Nose: 1px bump on left edge (outline protrusion technique)
+          playerGfx.fillStyle(skin, 1)
+          playerGfx.fillRect(x + 4, y + 4, 1, 1)
+        } else if (dir === 'right') {
+          // Side profile facing right: eye on right side
+          playerGfx.fillStyle(eyeColor, 1)
+          playerGfx.fillRect(x + 9, y + 3, 1, 1)
+          // Nose: 1px bump on right edge
+          playerGfx.fillStyle(skin, 1)
+          playerGfx.fillRect(x + 11, y + 4, 1, 1)
+        }
+        // 'up' direction: no facial features (back of head)
+
+        // --- Legs (start at y+13, below body which ends at y+12) ---
+        // Walk frames: stepping leg extends 1px downward
+        const leftExtra = col === 1 ? 1 : 0
+        const rightExtra = col === 2 ? 1 : 0
+        playerGfx.fillStyle(legColor, 1)
+        playerGfx.fillRect(x + 5, y + 13, 2, 2 + leftExtra)   // left leg
+        playerGfx.fillRect(x + 9, y + 13, 2, 2 + rightExtra)  // right leg
       }
     }
 

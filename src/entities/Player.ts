@@ -38,12 +38,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         })
       }
       if (!anims.exists(`player-walk-${dir}`)) {
+        // Classic RPG 4-frame walk cycle: step-left → neutral → step-right → neutral
+        // Using the idle frame as the passing position prevents visual "popping"
         anims.create({
           key: `player-walk-${dir}`,
-          frames: anims.generateFrameNumbers('player', {
-            start: frameStart + 1,
-            end: frameStart + 2,
-          }),
+          frames: [
+            { key: 'player', frame: frameStart + 1 },
+            { key: 'player', frame: frameStart },
+            { key: 'player', frame: frameStart + 2 },
+            { key: 'player', frame: frameStart },
+          ],
           frameRate: 8,
           repeat: -1,
         })
