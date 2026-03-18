@@ -342,10 +342,11 @@ def _make_hair_long():
     left += _hr(4, 7, 21, 0)
     left += _hr(5, 6, 22, 0)
     left += _hr(6, 6, 22, 1)
+    # Long strands drape on the BACK of head (right/high-x side for left-facing)
     for y in range(7, 22):
-        left += [(5, y, 1), (6, y, 1)]
+        left += [(24, y, 1), (25, y, 1)]
     for y in range(7, 14):
-        left += [(4, y, 1)]
+        left += [(26, y, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
     return {"down": front, "up": back, "left": left, "right": right}
@@ -411,6 +412,11 @@ def _make_hair_ponytail():
     left += _hr(4, 7, 21, 0)
     left += _hr(5, 6, 22, 0)
     left += _hr(6, 6, 22, 1)
+    # Ponytail visible trailing behind head (right/high-x = back for left-facing)
+    for y in range(8, 18):
+        left += [(23, y, 1)]
+    for y in range(10, 16):
+        left += [(24, y, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
     return {"down": front, "up": back, "left": left, "right": right}
@@ -481,8 +487,9 @@ def _make_hair_wavy():
     left += _hr(4, 6, 22, 0)
     left += _hr(5, 6, 22, 0)
     left += _hr(6, 6, 22, 1)
+    # Wavy strands drape on the BACK of head (right/high-x side for left-facing)
     for y in range(7, 16):
-        left += [(5, y, 0 if y % 2 == 0 else 1), (6, y, 1)]
+        left += [(25, y, 0 if y % 2 == 0 else 1), (24, y, 1)]
 
     right = [(FRAME_W - 1 - x, y, s) for x, y, s in left]
     return {"down": front, "up": back, "left": left, "right": right}
