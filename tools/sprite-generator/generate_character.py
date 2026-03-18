@@ -7,7 +7,13 @@ Generates 32x32 spritesheets with SNES-inspired chibi proportions:
     forehead highlight for 3/4 top-down depth
   - Shoulder step-out (14px) tapering to waist (10px) with belt-line detail
   - 2px leg gap for clear readability in front/back views
-  - Thick 3px-wide arms hanging from shoulder pivots
+  - 3px-wide arms on shoulder-pivot overlay system with enhanced walk cycle:
+      * Front/back walk: 4 distinct arm poses (mid_fwd/peak/mid_back/peak)
+        so all 4 frames differ — no repeated neutral frames
+      * Side walk: front arm swings full arc (side_hang→fwd→hang→back);
+        back arm peeks from behind body using skin_shade + outline pixels,
+        giving depth and bilateral movement to the side-view cycle
+      * side_fwd/side_back extended to 5-6 rows for consistent arm length
   - Detailed hair with 3-tone shading (highlight, base, shade)
   - Clothing with shirt/pants/shoes distinction and belt-line detail
   - Hue-shifted shadows (cool-shifted) for depth and richness
@@ -950,6 +956,7 @@ _ARM_POSE_LEFT = {
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
+    # swing_fwd: peak forward swing (arm lifted, pivoted toward camera for down view)
     "swing_fwd":  [
         (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
         (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
@@ -957,6 +964,16 @@ _ARM_POSE_LEFT = {
         (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
         (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
     ],
+    # mid_fwd: intermediate between hang and swing_fwd (passing position slightly forward)
+    "mid_fwd": [
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+    ],
+    # swing_back: peak backward swing (arm dropped behind body)
     "swing_back": [
         (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
         (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
@@ -964,6 +981,15 @@ _ARM_POSE_LEFT = {
         (-1, 4, "skin"), (-2, 4, "skin"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
         (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "outline"),
+    ],
+    # mid_back: intermediate between hang and swing_back (passing position slightly back)
+    "mid_back": [
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
     "raised":     [
         (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
@@ -986,18 +1012,71 @@ _ARM_POSE_LEFT = {
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
+    # side_fwd: arm swings forward (up in sprite). 5 rows, starts 1px above shoulder.
+    # Added extra lower row vs old 4-row version to match side_hang length better.
     "side_fwd":   [
         (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
         (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
         (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
         (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
     ],
+    # side_fwd_mid: halfway between side_hang and side_fwd (smoother walk cycle)
+    "side_fwd_mid": [
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+    ],
+    # side_back: arm swings backward (down in sprite). 6 rows total.
     "side_back":  [
         (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
         (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
         (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+        (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "outline"),
+    ],
+    # side_back_mid: halfway between side_hang and side_back (smoother walk cycle)
+    "side_back_mid": [
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+    ],
+    # Back-arm peek poses: 2px wide strip shown peeking from behind the body.
+    # Darker (skin_shade) with outline to read as being behind the torso.
+    # NOTE: these poses are only ever assigned to the BACK arm (r_pose in left view,
+    # l_pose in right view), so the dx values here are intentionally written for the
+    # left-arm pivot convention — mirroring flips them to extend the other direction.
+    "side_back_peek": [
+        (-1, 0, "skin_shade"), (-2, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "outline"),
+    ],
+    # Back arm peeking while swinging forward (arm lifted slightly)
+    "side_back_peek_fwd": [
+        (-1, -1, "skin_shade"), (-2, -1, "outline"),
+        (-1, 0, "skin_shade"), (-2, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+    ],
+    # Back arm peeking while swinging backward (arm dropped slightly)
+    "side_back_peek_back": [
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "outline"),
+        (-1, 6, "skin_shade"), (-2, 6, "outline"),
     ],
     "side_raise": [
         (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
@@ -1058,29 +1137,41 @@ def _get_arm_pixels(direction, animation, frame_idx):
 # Arm pose schedule per animation.
 _ARM_ANIM_POSES = {
     "walk": {
+        # Front-facing walk: 4-frame arm swing opposite to legs.
+        # F0: right arm slightly forward, left slightly back (contact pose 1)
+        # F1: peak swing — left fwd, right back
+        # F2: left arm slightly forward, right slightly back (contact pose 2, mirror of F0)
+        # F3: peak swing — left back, right fwd
         "down": [
-            ("hang",      "hang"),
+            ("mid_fwd",   "mid_back"),
             ("swing_fwd", "swing_back"),
-            ("hang",      "hang"),
+            ("mid_back",  "mid_fwd"),
             ("swing_back", "swing_fwd"),
         ],
+        # Back-facing walk: same cadence as front
         "up": [
-            ("hang",      "hang"),
+            ("mid_fwd",   "mid_back"),
             ("swing_fwd", "swing_back"),
-            ("hang",      "hang"),
+            ("mid_back",  "mid_fwd"),
             ("swing_back", "swing_fwd"),
         ],
+        # Side walk: front arm swings full arc; back arm peeks from behind body.
+        # Peek poses use skin_shade + outline to read as behind the torso.
+        # F0: contact — front arm neutral, back arm peeks at neutral height
+        # F1: passing — front arm swings forward, back arm peeks swung back
+        # F2: contact — same neutral (mirror stride)
+        # F3: passing — front arm swings back, back arm peeks swung forward
         "left": [
-            ("side_hang", "rest"),
-            ("side_fwd",  "rest"),
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
+            ("side_hang",    "side_back_peek"),
+            ("side_fwd",     "side_back_peek_back"),
+            ("side_hang",    "side_back_peek"),
+            ("side_back",    "side_back_peek_fwd"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_fwd"),
-            ("rest", "side_hang"),
-            ("rest", "side_back"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_fwd"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_fwd",  "side_back"),
         ],
     },
     "jump": {
@@ -1096,43 +1187,45 @@ _ARM_ANIM_POSES = {
             ("raised", "raised"),
             ("swing_fwd", "swing_fwd"),
         ],
+        # Jump side: front arm swings up into raise; back arm peeks (swings opposite)
         "left": [
-            ("side_hang",  "rest"),
-            ("side_fwd",   "rest"),
-            ("side_raise", "rest"),
-            ("side_fwd",   "rest"),
+            ("side_hang",    "side_back_peek"),
+            ("side_fwd_mid", "side_back_peek_back"),
+            ("side_raise",   "side_back_peek_fwd"),
+            ("side_fwd_mid", "side_back_peek_back"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_fwd"),
-            ("rest", "side_raise"),
-            ("rest", "side_fwd"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_fwd_mid"),
+            ("side_back_peek_fwd",  "side_raise"),
+            ("side_back_peek_back", "side_fwd_mid"),
         ],
     },
     "crouch": {
+        # Crouch: arms drop back as character hunches. Hold-down frames use swing_back.
         "down": [
             ("hang",       "hang"),
+            ("mid_back",   "mid_back"),
             ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
+            ("mid_back",   "mid_back"),
         ],
         "up": [
             ("hang",       "hang"),
+            ("mid_back",   "mid_back"),
             ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
+            ("mid_back",   "mid_back"),
         ],
         "left": [
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
+            ("side_hang",     "side_back_peek"),
+            ("side_back_mid", "side_back_peek_back"),
+            ("side_back",     "side_back_peek_back"),
+            ("side_back_mid", "side_back_peek_back"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_back"),
-            ("rest", "side_back"),
-            ("rest", "side_back"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_back_mid"),
+            ("side_back_peek_back", "side_back"),
+            ("side_back_peek_back", "side_back_mid"),
         ],
     },
     "interact": {
@@ -1148,17 +1241,18 @@ _ARM_ANIM_POSES = {
             ("hang", "raised"),
             ("hang", "swing_fwd"),
         ],
+        # Interact side: front arm reaches out; back arm peeks (slightly back/hanging)
         "left": [
-            ("side_hang",          "rest"),
-            ("side_interact_45",   "rest"),
-            ("side_interact_90",   "rest"),
-            ("side_hang",          "rest"),
+            ("side_hang",        "side_back_peek"),
+            ("side_interact_45", "side_back_peek_back"),
+            ("side_interact_90", "side_back_peek_back"),
+            ("side_hang",        "side_back_peek"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_interact_45"),
-            ("rest", "side_interact_90"),
-            ("rest", "side_hang"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_interact_45"),
+            ("side_back_peek_back", "side_interact_90"),
+            ("side_back_peek",      "side_hang"),
         ],
     },
 }
@@ -1456,7 +1550,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v9 — 32x32 enhanced face + torso ({TILE_SIZE}px grid, {scale}x render)</p>
+<p class="info">v10 — 32x32 enhanced arms: back-arm peek + 4-phase walk swing ({TILE_SIZE}px grid, {scale}x render)</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
