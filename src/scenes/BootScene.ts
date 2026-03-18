@@ -96,13 +96,13 @@ export class BootScene extends Phaser.Scene {
         }
         // 'up' direction: no facial features (back of head)
 
-        // --- Legs (start at y+13, below body which ends at y+12) ---
+        // --- Legs (overlap body by 1 row to hide width transition) ---
         // Walk frames: stepping leg extends 1px downward
         const leftExtra = col === 1 ? 1 : 0
         const rightExtra = col === 2 ? 1 : 0
         playerGfx.fillStyle(legColor, 1)
-        playerGfx.fillRect(x + 5, y + 13, 2, 2 + leftExtra)   // left leg
-        playerGfx.fillRect(x + 9, y + 13, 2, 2 + rightExtra)  // right leg
+        playerGfx.fillRect(x + 4, y + 12, 3, 3 + leftExtra)   // left leg
+        playerGfx.fillRect(x + 9, y + 12, 3, 3 + rightExtra)  // right leg
       }
     }
 
