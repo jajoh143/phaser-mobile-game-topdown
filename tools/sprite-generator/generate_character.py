@@ -639,25 +639,80 @@ def _build_body_down():
     p.append((19, 11, "eye_white"))       # right eye: sclera lower-left
     p.append((20, 11, "eye"))             # right eye: dark lower-right
 
-    # --- Torso / Shirt (smooth shoulder-to-waist taper) ---
-    # Width: 8→10→14→14→12→12→10→10→10 (added intermediate row)
-    # Sel-out: shoulders use outline_light, waist keeps dark outline
-    p += _row(16, 12, 19, "shirt_shade")  # 8px - neck (head shadow)
-    p += _row(17, 11, 20, "shirt_highlight", "outline_light", "outline_light")  # 10px highlight
-    p += _row(18, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
-    p += _row(19, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulders
-    p += _row(20, 10, 21, "shirt")        # 12px
-    p += _row(21, 10, 21, "shirt")        # 12px
-    p += _row(22, 11, 20, "belt")         # 10px belt line
-    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
-    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
+    # --- Torso / Shirt — muscle-shaded, pixel-art chibi conventions ---
+    #
+    # Light source: overhead + top-left. Shading principles (SNES/chibi style):
+    #   • Sternum center (x=14-17) = brightest — direct overhead catch
+    #   • Outer shoulder pixels = shirt_shade — surface curves away from light
+    #   • y=20 outer pixels = shirt_shade — under-pec crease / rib-cage shadow
+    #   • Belt center 2px = shirt_highlight — belt-buckle accent
+    #   • Hip outer pixels = pants_shade — hip curve into legs
+    # AA pixels soften width-step corners (14→12 at shoulders, 12→10 at waist).
 
-    # Torso AA: smooth the shoulder flare (10→14) outer corners
-    p.append((10, 18, "shirt_aa"))   # left shoulder inner corner
-    p.append((21, 18, "shirt_aa"))   # right shoulder inner corner
-    # Torso AA: smooth shoulder→mid-torso (14→12) inner corners
-    p.append((9, 20, "shirt_aa"))    # left under-arm inner corner
-    p.append((22, 20, "shirt_aa"))   # right under-arm inner corner
+    # y=16: neck (sits in head's cast shadow — darkest)
+    p += _row(16, 12, 19, "shirt_shade")
+
+    # y=17: upper chest — sternum highlight strip + shoulder mid-tone sides.
+    # Breaking the uniform highlight creates a rounded chest surface.
+    p.append((11, 17, "outline_light"))
+    for x in range(12, 14):                   # left shoulder side: mid-tone
+        p.append((x, 17, "shirt"))
+    for x in range(14, 18):                   # sternum center: direct overhead light
+        p.append((x, 17, "shirt_highlight"))
+    for x in range(18, 20):                   # right shoulder side: mid-tone
+        p.append((x, 17, "shirt"))
+    p.append((20, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Outer shoulder pixels shade to suggest the shoulder mass curving away.
+    # shirt_aa at the sel-out edge smooths the 10→14 width jump.
+    for y in range(18, 20):
+        p.append((9,  y, "outline_light"))     # sel-out left edge
+        p.append((10, y, "shirt_aa"))          # AA: outline→shoulder transition
+        p.append((11, y, "shirt_shade"))       # outer shoulder: curves from top-left
+        for x in range(12, 20):               # chest center body
+            p.append((x, y, "shirt"))
+        p.append((20, y, "shirt_shade"))       # outer right shoulder
+        p.append((21, y, "shirt_aa"))          # AA: right shoulder→outline
+        p.append((22, y, "outline_light"))     # sel-out right edge
+
+    # y=20: under-pec shadow — the crease/fold below the chest muscle.
+    # Classic SNES technique: 2px of shade each side, leaving the belly
+    # center lit to suggest the separation between chest and abdomen.
+    p.append((10, 20, "outline"))
+    p.append((11, 20, "shirt_shade"))          # left under-pec crease
+    p.append((12, 20, "shirt_shade"))          # left side shadow
+    for x in range(13, 19):                   # belly center: still lit
+        p.append((x, 20, "shirt"))
+    p.append((19, 20, "shirt_shade"))          # right side shadow
+    p.append((20, 20, "shirt_shade"))          # right under-pec crease
+    p.append((21, 20, "outline"))
+    p.append((9,  20, "shirt_aa"))             # under-arm AA (14→12 width step)
+    p.append((22, 20, "shirt_aa"))
+
+    # y=21: lower torso / belly — plain shirt (unshaded belly above belt)
+    p += _row(21, 10, 21, "shirt")
+
+    # y=22: belt — 2px buckle highlight at center for a belt-buckle impression.
+    # Color break between shirt and pants is the primary waist segmentation cue.
+    p.append((11, 22, "outline"))
+    for x in range(12, 15):                   # left belt panel
+        p.append((x, 22, "belt"))
+    p.append((15, 22, "shirt_highlight"))      # buckle left: bright catch
+    p.append((16, 22, "shirt_highlight"))      # buckle right
+    for x in range(17, 20):                   # right belt panel
+        p.append((x, 22, "belt"))
+    p.append((20, 22, "outline"))
+
+    # y=23-24: pants hips — outer 1px per side = pants_shade for hip-curve depth.
+    # Shade implies the hip flaring outward below the waist taper.
+    for y in range(23, 25):
+        p.append((11, y, "outline"))
+        p.append((12, y, "pants_shade"))       # outer hip curve
+        for x in range(13, 19):               # hip center
+            p.append((x, y, "pants"))
+        p.append((19, y, "pants_shade"))       # outer right hip
+        p.append((20, y, "outline"))
 
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
@@ -695,16 +750,59 @@ def _build_body_up():
     p.append((9, 15, "skin_aa"))
     p.append((22, 15, "skin_aa"))
 
-    # --- Torso (back, smooth taper) ---
-    p += _row(16, 12, 19, "shirt_shade")       #  8px neck
-    p += _row(17, 11, 20, "shirt_shade")       # 10px widening
-    p += _row(18, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
-    p += _row(19, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
-    p += _row(20, 10, 21, "shirt_shade")  # 12px
-    p += _row(21, 10, 21, "shirt_shade")  # 12px
-    p += _row(22, 11, 20, "belt")         # 10px belt
-    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
-    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
+    # --- Torso (back — muscle-shaded) ---
+    #
+    # Back faces away from the overhead+front light; most of the torso is
+    # shirt_shade. However the shoulder cap tops still catch overhead light,
+    # and the belt/hip segmentation matches the front view.
+
+    # y=16: neck shadow
+    p += _row(16, 12, 19, "shirt_shade")
+
+    # y=17: upper back — uniform shirt_shade (in shadow), but outer shoulder
+    # tops get shirt to suggest the rounded shoulder cap catching overhead light.
+    p.append((11, 17, "outline_light"))
+    p.append((12, 17, "shirt"))            # left shoulder cap top: overhead catch
+    for x in range(13, 19):               # back center: in shadow
+        p.append((x, 17, "shirt_shade"))
+    p.append((19, 17, "shirt"))            # right shoulder cap top
+    p.append((20, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Outer shoulder caps (x=10-11 and x=20-21) slightly lighter to suggest
+    # the shoulder mass seen from above; back body remains shirt_shade.
+    for y in range(18, 20):
+        p.append((9,  y, "outline_light"))
+        p.append((10, y, "shirt_aa"))      # AA: outline→shoulder
+        p.append((11, y, "shirt"))         # shoulder cap: catches overhead light
+        for x in range(12, 20):           # back torso: shirt_shade
+            p.append((x, y, "shirt_shade"))
+        p.append((20, y, "shirt"))         # right shoulder cap
+        p.append((21, y, "shirt_aa"))
+        p.append((22, y, "outline_light"))
+
+    # y=20-21: mid back — all shirt_shade
+    p += _row(20, 10, 21, "shirt_shade")
+    p += _row(21, 10, 21, "shirt_shade")
+
+    # y=22: belt — buckle highlight matches front view
+    p.append((11, 22, "outline"))
+    for x in range(12, 15):
+        p.append((x, 22, "belt"))
+    p.append((15, 22, "shirt_highlight"))
+    p.append((16, 22, "shirt_highlight"))
+    for x in range(17, 20):
+        p.append((x, 22, "belt"))
+    p.append((20, 22, "outline"))
+
+    # y=23-24: pants hips — outer hip shade matches front view
+    for y in range(23, 25):
+        p.append((11, y, "outline"))
+        p.append((12, y, "pants_shade"))
+        for x in range(13, 19):
+            p.append((x, y, "pants"))
+        p.append((19, y, "pants_shade"))
+        p.append((20, y, "outline"))
 
     # Legs are drawn by the leg pose system.
     return p
@@ -770,22 +868,80 @@ def _build_body_left():
     p.append((5, 13, "nose_shadow"))   # upper lip profile (lighter)
     p.append((6, 13, "mouth"))
 
-    # --- Torso (side, smooth taper) ---
-    p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
-    p += _row(17, 10, 19, "shirt_highlight", "outline_light", "outline_light")  # 10px
-    p += _row(18, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
-    p += _row(19, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulders
-    p += _row(20, 9, 20, "shirt")         # 12px
-    p += _row(21, 9, 20, "shirt")         # 12px
-    p += _row(22, 10, 19, "belt")         # 10px belt
-    p += _row(23, 10, 19, "pants")        # 10px waist (matches pants)
-    p += _row(24, 10, 19, "pants")        # 10px hips (matches pants)
+    # --- Torso (side — muscle-shaded for profile depth) ---
+    #
+    # Left-facing character: front of body = small x (lit), back = large x (shadow).
+    # Light source overhead+left: front-chest pixels are brightest.
+    # shirt_shade on the back 2-3 pixels of each row creates a curved tube illusion.
+    # The front→back gradient: shirt_highlight → shirt → shirt_shade conveys depth.
 
-    # Torso AA: shoulder flare and under-arm transitions
-    p.append((9, 18, "shirt_aa"))   # left shoulder inner corner
-    p.append((20, 18, "shirt_aa"))  # right shoulder inner corner
-    p.append((8, 20, "shirt_aa"))   # left under-arm inner corner
-    p.append((21, 20, "shirt_aa"))  # right under-arm inner corner
+    # y=16: neck shadow
+    p += _row(16, 11, 18, "shirt_shade")
+
+    # y=17: upper chest profile — front lit, back shaded.
+    p.append((10, 17, "outline_light"))
+    for x in range(11, 14):               # front chest: highlight (direct overhead)
+        p.append((x, 17, "shirt_highlight"))
+    for x in range(14, 17):               # chest center: mid-tone
+        p.append((x, 17, "shirt"))
+    p.append((17, 17, "shirt_shade"))      # chest back: curves away
+    p.append((18, 17, "shirt_shade"))
+    p.append((19, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Front face lit, back face in shade. shirt_aa at edges.
+    for y in range(18, 20):
+        p.append((8,  y, "outline_light"))
+        p.append((9,  y, "shirt_aa"))      # front AA edge
+        for x in range(10, 17):           # front+center: shirt (front face lit)
+            p.append((x, y, "shirt"))
+        p.append((17, y, "shirt_shade"))   # back shoulder: curves away
+        p.append((18, y, "shirt_shade"))
+        p.append((19, y, "shirt_shade"))
+        p.append((20, y, "shirt_aa"))      # back AA edge
+        p.append((21, y, "outline_light"))
+
+    # y=20: mid torso — under-pec / side body shadow on back pixels.
+    p.append((9,  20, "outline"))
+    p.append((8,  20, "shirt_aa"))         # under-arm AA
+    for x in range(10, 16):               # front+center belly: shirt
+        p.append((x, 20, "shirt"))
+    p.append((16, 20, "shirt_shade"))      # back torso shade
+    p.append((17, 20, "shirt_shade"))
+    p.append((18, 20, "shirt_shade"))
+    p.append((19, 20, "shirt_shade"))
+    p.append((20, 20, "outline"))
+    p.append((21, 20, "shirt_aa"))         # right under-arm AA
+
+    # y=21: lower belly — same depth gradient
+    p.append((9,  21, "outline"))
+    for x in range(10, 16):
+        p.append((x, 21, "shirt"))
+    p.append((16, 21, "shirt_shade"))
+    p.append((17, 21, "shirt_shade"))
+    p.append((18, 21, "shirt_shade"))
+    p.append((19, 21, "shirt_shade"))
+    p.append((20, 21, "outline"))
+
+    # y=22: belt — buckle highlight matches front/back view
+    p.append((10, 22, "outline"))
+    for x in range(11, 13):
+        p.append((x, 22, "belt"))
+    p.append((13, 22, "shirt_highlight"))  # buckle
+    p.append((14, 22, "shirt_highlight"))
+    for x in range(15, 19):
+        p.append((x, 22, "belt"))
+    p.append((19, 22, "outline"))
+
+    # y=23-24: pants hips — back pixels shade for hip curve depth
+    for y in range(23, 25):
+        p.append((10, y, "outline"))
+        for x in range(11, 16):           # front hip: pants
+            p.append((x, y, "pants"))
+        p.append((16, y, "pants_shade"))   # back hip curve
+        p.append((17, y, "pants_shade"))
+        p.append((18, y, "pants_shade"))
+        p.append((19, y, "outline"))
 
     # Legs are drawn by the leg pose system.
     return p
@@ -1619,7 +1775,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v11 — 32x32 enhanced face (eyebrows, blush, wider mouth) + human arms (tube shading, elbow bump) ({TILE_SIZE}px grid, {scale}x render)</p>
+<p class="info">v12 — 32x32 muscle-shaded torso (sternum highlight, under-pec shadow, belt buckle, hip curve) + face + arms ({TILE_SIZE}px grid, {scale}x render)</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
