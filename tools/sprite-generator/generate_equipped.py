@@ -24,13 +24,21 @@ Usage:
 import argparse
 import json
 import os
+import sys
 from PIL import Image
 
+# Ensure the script directory is on the path so sibling modules are importable
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+import generate_character as _gc
+import generate_weapon    as _gw
+
 # Paths
-SCRIPT_DIR   = os.path.dirname(__file__)
-CHAR_DIR     = os.path.join(SCRIPT_DIR, "generated")
-WEAPON_DIR   = os.path.join(SCRIPT_DIR, "generated", "weapons")
-OUTPUT_DIR   = os.path.join(SCRIPT_DIR, "generated", "equipped")
+CHAR_DIR     = os.path.join(_SCRIPT_DIR, "generated")
+WEAPON_DIR   = os.path.join(_SCRIPT_DIR, "generated", "weapons")
+OUTPUT_DIR   = os.path.join(_SCRIPT_DIR, "generated", "equipped")
 
 FRAME_W, FRAME_H = 32, 32
 DIRECTIONS = ["down", "left", "right", "up"]
@@ -324,23 +332,35 @@ if(img.complete) setInterval(draw,1000/FPS);
 
 
 def _load_char_sheet(preset_idx: int, char_name: str) -> Image.Image:
+    """Load character sheet, auto-generating it (and saving to disk) if missing."""
     tag  = f"preset{preset_idx}"
     path = os.path.join(CHAR_DIR, f"{char_name}_{tag}.png")
     if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"Character sheet not found: {path}\n"
-            f"  Run: python generate_character.py --preset {preset_idx} --name {char_name}"
-        )
+        print(f"  [auto] Generating character sheet for preset {preset_idx}...")
+        if preset_idx < 0 or preset_idx >= len(_gc.PRESETS):
+            raise ValueError(f"Invalid preset index {preset_idx}; "
+                             f"valid range is 0-{len(_gc.PRESETS)-1}")
+        palette    = _gc.PRESETS[preset_idx]
+        hair_style = (_gc.DEFAULT_HAIR[preset_idx]
+                      if preset_idx < len(_gc.DEFAULT_HAIR) else "short")
+        sheet, _   = _gc.build_spritesheet(palette, hair_style)
+        os.makedirs(CHAR_DIR, exist_ok=True)
+        sheet.save(path)
+        print(f"  [auto] Saved: {path}")
+        return sheet.convert("RGBA")
     return Image.open(path).convert("RGBA")
 
 
 def _load_weapon_sheet(weapon_name: str) -> Image.Image:
+    """Load weapon sheet, auto-generating it (and saving to disk) if missing."""
     path = os.path.join(WEAPON_DIR, f"weapon_{weapon_name}.png")
     if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"Weapon sheet not found: {path}\n"
-            f"  Run: python generate_weapon.py --weapon {weapon_name}"
-        )
+        print(f"  [auto] Generating weapon sheet for {weapon_name}...")
+        sheet, _ = _gw.render_weapon(weapon_name)
+        os.makedirs(WEAPON_DIR, exist_ok=True)
+        sheet.save(path)
+        print(f"  [auto] Saved: {path}")
+        return sheet.convert("RGBA")
     return Image.open(path).convert("RGBA")
 
 
