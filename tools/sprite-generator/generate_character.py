@@ -47,7 +47,7 @@ TILE_SIZE = 32  # world grid is 32x32; sprites render at 1x
 
 DIRECTIONS = ["down", "left", "right", "up"]
 FRAMES_PER_DIR = 4
-ANIMATIONS = ["walk", "jump", "crouch", "interact"]
+ANIMATIONS = ["walk", "jump", "crouch", "interact", "slash"]
 
 # ---------------------------------------------------------------------------
 # COLOR PALETTES
@@ -785,15 +785,8 @@ def _build_body_up():
     p += _row(20, 10, 21, "shirt_shade")
     p += _row(21, 10, 21, "shirt_shade")
 
-    # y=22: belt — buckle highlight matches front view
-    p.append((11, 22, "outline"))
-    for x in range(12, 15):
-        p.append((x, 22, "belt"))
-    p.append((15, 22, "shirt_highlight"))
-    p.append((16, 22, "shirt_highlight"))
-    for x in range(17, 20):
-        p.append((x, 22, "belt"))
-    p.append((20, 22, "outline"))
+    # y=22: belt — back view, no buckle visible from behind
+    p += _row(22, 11, 20, "belt")
 
     # y=23-24: pants hips — outer hip shade matches front view
     for y in range(23, 25):
@@ -1104,6 +1097,7 @@ _LEG_Y_OFFSETS = {
     "jump":     [1, 0, -2, 1],
     "crouch":   [0, 0, 1, 0],
     "interact": [0, 0, 0, 0],
+    "slash":    [0, 0, 0, 0],
 }
 
 
@@ -1328,6 +1322,70 @@ _ARM_POSE_LEFT = {
         (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"), (-5, 2, "skin_shade"),
         (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"), (-6, 2, "skin_shade"),
     ],
+
+    # ---------------------------------------------------------------------------
+    # SLASH / ATTACK poses
+    # ---------------------------------------------------------------------------
+    # slash_windup: arm raised straight up — weapon held high before strike.
+    # (inner-body pixel = skin_shade, outer = skin, edge = outline, elbow bump at dy=-3)
+    "slash_windup": [
+        (-1, -1, "skin_shade"), (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, -2, "skin_shade"), (-2, -2, "skin"), (-3, -2, "outline"),
+        # Elbow bump (arm slightly bent, protrudes outward)
+        (-1, -3, "skin"),       (-2, -3, "skin"), (-3, -3, "skin_shade"), (-4, -3, "outline"),
+        # Forearm: raised above head
+        (-1, -4, "skin_shade"), (-2, -4, "skin_shade"), (-3, -4, "outline"),
+        (-1, -5, "skin_shade"), (-2, -5, "skin_shade"), (-3, -5, "outline"),
+    ],
+    # slash_strike: arm swings diagonally outward-downward (the impact frame).
+    # Arm extends outward from shoulder; each row shifts 1px further out.
+    "slash_strike": [
+        (-1, 0, "skin_shade"), (-2, 0, "skin"),  (-3, 0, "outline"),
+        (-2, 1, "skin_shade"), (-3, 1, "skin"),  (-4, 1, "outline"),
+        # Elbow bump at dy=2
+        (-3, 2, "skin"),       (-4, 2, "skin"),  (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        # Forearm extends out further
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "outline"),
+    ],
+    # slash_follow: arm extended diagonally forward after the strike.
+    # Less reach than strike — arm settles forward rather than fully out.
+    "slash_follow": [
+        (-1, 0, "skin_shade"), (-2, 0, "skin"),  (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"),  (-3, 1, "outline"),
+        (-2, 2, "skin_shade"), (-3, 2, "skin"),  (-4, 2, "outline"),
+        # Elbow bump at dy=3
+        (-3, 3, "skin"),       (-4, 3, "skin"),  (-5, 3, "skin_shade"), (-6, 3, "outline"),
+        # Forearm
+        (-4, 4, "skin_shade"), (-5, 4, "skin_shade"), (-6, 4, "outline"),
+    ],
+    # side_slash_windup: side-view arm raised high (4px tube cross-section).
+    # Upper arm goes up-outward; forearm curls back above head.
+    "side_slash_windup": [
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "skin_shade"), (-5, -1, "outline"),
+        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "skin_shade"), (-6, -2, "outline"),
+        # Forearm curls back (dx shifts inward)
+        (-2, -3, "skin_shade"), (-3, -3, "skin_shade"), (-4, -3, "skin_shade"), (-5, -3, "outline"),
+        (-1, -4, "skin_shade"), (-2, -4, "skin_shade"), (-3, -4, "skin_shade"), (-4, -4, "outline"),
+    ],
+    # side_slash_strike: side-view arm swings forward diagonally (45° forward arc).
+    "side_slash_strike": [
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "skin_shade"), (-5, 1, "outline"),
+        (-3, 2, "skin_shade"), (-4, 2, "skin_shade"), (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "skin_shade"), (-7, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "skin_shade"), (-8, 4, "outline"),
+    ],
+    # side_slash_follow: side-view arm horizontal — fully extended forward after slash.
+    "side_slash_follow": [
+        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"), (-1, 2, "skin_shade"),
+        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"), (-2, 2, "skin_shade"),
+        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"), (-3, 2, "skin_shade"),
+        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"), (-4, 2, "skin_shade"),
+        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"), (-5, 2, "skin_shade"),
+        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"), (-6, 2, "skin_shade"),
+    ],
 }
 
 
@@ -1480,6 +1538,42 @@ _ARM_ANIM_POSES = {
             ("side_back_peek",      "side_hang"),
         ],
     },
+    # ---------------------------------------------------------------------------
+    # SLASH animation — 4 frames: windup → strike → follow-through → recover
+    # Right arm = weapon arm (primary); left arm = counterbalance (off-hand).
+    # ---------------------------------------------------------------------------
+    "slash": {
+        # Front-facing slash: right arm swings from raised windup down through a diagonal arc.
+        # Left (off-hand) swings opposite for balance (back during windup, forward on strike).
+        "down": [
+            ("mid_back",      "slash_windup"),   # F0 windup: weapon arm raised, off-hand back
+            ("mid_fwd",       "slash_strike"),   # F1 strike: weapon arm diagonal forward-down
+            ("mid_fwd",       "slash_follow"),   # F2 follow: arm settles forward, off-hand forward
+            ("hang",          "hang"),           # F3 recover: both arms return to neutral
+        ],
+        # Back-facing slash: same cadence as front (back view shows same arm positions).
+        "up": [
+            ("mid_back",      "slash_windup"),
+            ("mid_fwd",       "slash_strike"),
+            ("mid_fwd",       "slash_follow"),
+            ("hang",          "hang"),
+        ],
+        # Left-facing slash: front arm (left) swings through the full attack arc.
+        # Back arm (right) peeks from behind — it's the supporting hand.
+        "left": [
+            ("side_slash_windup",  "side_back_peek_back"),   # F0 windup
+            ("side_slash_strike",  "side_back_peek"),        # F1 strike
+            ("side_slash_follow",  "side_back_peek_fwd"),    # F2 follow-through
+            ("side_hang",          "side_back_peek"),        # F3 recover
+        ],
+        # Right-facing slash: mirror of left — front arm is the right arm.
+        "right": [
+            ("side_back_peek_back", "side_slash_windup"),
+            ("side_back_peek",      "side_slash_strike"),
+            ("side_back_peek_fwd",  "side_slash_follow"),
+            ("side_back_peek",      "side_hang"),
+        ],
+    },
 }
 
 
@@ -1587,6 +1681,34 @@ ANIM_OFFSETS = {
         },
         "right": {
             "head":  [(0, 0), (0, 0),  (0, -1), (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+    },
+    # Slash: body leans slightly forward on strike, head bobs with the motion.
+    # F0=windup, F1=strike (lean in), F2=follow-through, F3=recover
+    "slash": {
+        "down": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "up": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "left": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "right": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
             "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>char_0_with_axe_preset0 — Equipped Preview</title>
+<style>
+  body { background:#1a1a2e; color:#eee; font-family:monospace;
+          display:flex; flex-direction:column; align-items:center; padding:2rem; }
+  h1 { margin-bottom:0.5rem; }
+  .info { color:#888; margin-bottom:1rem; }
+  canvas { image-rendering:pixelated; border:2px solid #444; }
+  .controls { display:flex; gap:0.5rem; margin:0.5rem 0; flex-wrap:wrap; justify-content:center; }
+  button { background:#333; color:#eee; border:1px solid #555;
+            padding:0.4rem 0.8rem; cursor:pointer; font-family:monospace; }
+  button:hover { background:#555; }
+  button.active { background:#0a7; color:#fff; }
+  .sheet-preview { margin-top:1rem; border:1px solid #333; }
+</style>
+</head><body>
+<h1>char_0_with_axe_preset0</h1>
+<p class="info">Equipped spritesheet — all animations with weapon overlay on slash frames</p>
+<canvas id="anim" width="192" height="192"></canvas>
+<div class="controls" id="animBtns"><label>Anim:</label></div>
+<div class="controls" id="dirBtns"><label>Dir:</label></div>
+<p class="info">Full spritesheet (3x zoom):</p>
+<img class="sheet-preview" id="sheetImg" />
+<script>
+const FW=32, FH=32, COLS=4, SCALE=6, FPS=6;
+const ANIMATIONS=["walk", "jump", "crouch", "interact", "slash"];
+const DIRECTIONS=["down", "left", "right", "up"];
+const canvas=document.getElementById("anim"), ctx=canvas.getContext("2d");
+ctx.imageSmoothingEnabled=false;
+const img=new Image(); img.src="char_0_with_axe_preset0.png";
+const sheetImg=document.getElementById("sheetImg"); sheetImg.src="char_0_with_axe_preset0.png";
+sheetImg.style.width=(128*3)+"px"; sheetImg.style.imageRendering="pixelated";
+let animIdx=0, dirIdx=0, frameIdx=0;
+function getRow(){ return animIdx*DIRECTIONS.length+dirIdx; }
+function makeButtons(id,labels,setter){
+  const c=document.getElementById(id);
+  labels.forEach((l,i)=>{
+    const b=document.createElement("button");
+    b.textContent=l; b.onclick=()=>{ setter(i); updateButtons(); };
+    if(i===0) b.classList.add("active");
+    c.appendChild(b);
+  });
+}
+function updateButtons(){
+  ["animBtns","dirBtns"].forEach((id,dim)=>{
+    [...document.getElementById(id).querySelectorAll("button")]
+      .forEach((b,i)=>b.classList.toggle("active",i===(dim===0?animIdx:dirIdx)));
+  });
+}
+makeButtons("animBtns",ANIMATIONS,i=>{ animIdx=i; frameIdx=0; });
+makeButtons("dirBtns",DIRECTIONS,i=>{ dirIdx=i; frameIdx=0; });
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!img.complete) return;
+  const sx=frameIdx*FW, sy=getRow()*FH;
+  ctx.drawImage(img,sx,sy,FW,FH,0,0,FW*SCALE,FH*SCALE);
+  frameIdx=(frameIdx+1)%COLS;
+}
+img.onload=()=>setInterval(draw,1000/FPS);
+if(img.complete) setInterval(draw,1000/FPS);
+</script>
+</body></html>
