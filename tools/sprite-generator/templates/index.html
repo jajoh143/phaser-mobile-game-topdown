@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚔️ Character Studio</title>
+<title>Character Studio</title>
 <style>
 /* ── reset & theme ── */
 :root {
@@ -18,6 +18,7 @@
   --gold:      #f0b83c;
   --gold-dim:  #9a7420;
   --green:     #3dba72;
+  --green-dim: #1e6b3e;
   --red:       #e05555;
   --text:      #dde0f5;
   --text-dim:  #7777aa;
@@ -45,13 +46,13 @@ body{
 header{
   background:var(--surface);
   border-bottom:1px solid var(--border);
-  padding:.55rem 1.2rem;
+  padding:.5rem 1.2rem;
   display:flex;
   align-items:center;
   gap:1rem;
   flex-shrink:0;
 }
-header h1{font-size:1rem;color:var(--gold);letter-spacing:.08em;white-space:nowrap}
+header h1{font-size:.95rem;color:var(--gold);letter-spacing:.08em;white-space:nowrap}
 .header-sub{color:var(--text-dim);font-size:.7rem}
 .header-spacer{flex:1}
 .header-tag{
@@ -61,44 +62,44 @@ header h1{font-size:1rem;color:var(--gold);letter-spacing:.08em;white-space:nowr
 }
 
 /* ── main 3-column layout ── */
-.main{
-  display:flex;
-  flex:1;
-  overflow:hidden;
-}
+.main{display:flex;flex:1;overflow:hidden}
 
 /* ── sidebars ── */
 .sidebar{
-  width:200px;
-  min-width:200px;
+  width:210px;min-width:210px;
   background:var(--surface);
-  display:flex;
-  flex-direction:column;
+  display:flex;flex-direction:column;
   overflow-y:auto;
-  padding:.75rem;
-  gap:.9rem;
+  padding:.7rem;
+  gap:.8rem;
   flex-shrink:0;
 }
 .sidebar-r{border-left:1px solid var(--border)}
 .sidebar-l{border-right:1px solid var(--border)}
 
+/* ── section headers ── */
 .section-hd{
-  font-size:.6rem;
-  text-transform:uppercase;
-  letter-spacing:.12em;
+  font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;
   color:var(--text-faint);
-  padding-bottom:.35rem;
+  padding-bottom:.3rem;
   border-bottom:1px solid var(--border);
-  margin-bottom:.4rem;
+  margin-bottom:.35rem;
+  display:flex;align-items:center;justify-content:space-between;
 }
+.section-hd button{
+  font-size:.6rem;background:none;border:none;
+  color:var(--text-faint);cursor:pointer;padding:0;
+  letter-spacing:.06em;text-transform:uppercase;
+  font-family:inherit;
+}
+.section-hd button:hover{color:var(--text-dim)}
 
 /* ── preset cards ── */
-.preset-list{display:flex;flex-direction:column;gap:.25rem}
+.preset-list{display:flex;flex-direction:column;gap:.22rem}
 .preset-card{
-  display:flex;align-items:center;gap:.45rem;
-  padding:.35rem .4rem;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
+  display:flex;align-items:center;gap:.4rem;
+  padding:.3rem .4rem;
+  border:1px solid var(--border);border-radius:var(--radius);
   cursor:pointer;
   transition:border-color .12s,background .12s;
 }
@@ -107,13 +108,11 @@ header h1{font-size:1rem;color:var(--gold);letter-spacing:.08em;white-space:nowr
 .chips{display:flex;gap:2px;flex-shrink:0}
 .chip{
   width:9px;height:9px;border-radius:2px;
-  border:1px solid rgba(255,255,255,.15);
-  flex-shrink:0;
+  border:1px solid rgba(255,255,255,.15);flex-shrink:0;
 }
 .preset-label{
   font-size:.7rem;overflow:hidden;
-  white-space:nowrap;text-overflow:ellipsis;
-  flex:1;
+  white-space:nowrap;text-overflow:ellipsis;flex:1;
 }
 
 /* ── form controls ── */
@@ -121,101 +120,126 @@ header h1{font-size:1rem;color:var(--gold);letter-spacing:.08em;white-space:nowr
 .field label{font-size:.65rem;color:var(--text-dim)}
 select,input[type=range]{font-family:inherit}
 select{
-  width:100%;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:.3rem .45rem;
-  border-radius:var(--radius);
-  font-size:.75rem;
-  cursor:pointer;
-  appearance:none;
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text);
+  padding:.3rem .45rem;border-radius:var(--radius);
+  font-size:.75rem;cursor:pointer;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23777'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right .5rem center;
+  background-repeat:no-repeat;background-position:right .5rem center;
   padding-right:1.4rem;
 }
 select:focus{outline:none;border-color:var(--accent)}
 
-/* ── weapon grid ── */
-.weapon-grid{
+/* ── color customization panel ── */
+.color-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:.3rem;
+  gap:.3rem .4rem;
+}
+.color-row{
+  display:flex;flex-direction:column;gap:.2rem;
+}
+.color-row label{
+  font-size:.6rem;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.color-wrap{
+  display:flex;align-items:center;gap:.3rem;
+}
+input[type=color]{
+  width:28px;height:22px;
+  padding:1px 2px;
+  border:1px solid var(--border);border-radius:3px;
+  background:var(--surface2);cursor:pointer;
+  flex-shrink:0;
+}
+input[type=color]::-webkit-color-swatch-wrapper{padding:1px}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:2px}
+.hex-val{
+  font-size:.62rem;color:var(--text-faint);
+  letter-spacing:.04em;min-width:44px;
+  cursor:pointer;
+}
+.hex-val:hover{color:var(--text-dim)}
+
+/* ── category tabs (weapon sidebar) ── */
+.cat-tabs{
+  display:flex;gap:2px;margin-bottom:.35rem;
+}
+.cat-btn{
+  flex:1;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  padding:.25rem .2rem;
+  font-family:inherit;font-size:.62rem;
+  cursor:pointer;border-radius:3px;
+  transition:background .1s,color .1s,border-color .1s;
+  text-align:center;
+}
+.cat-btn:hover{background:var(--surface3);color:var(--text)}
+.cat-btn.sel-fantasy{border-color:var(--gold);color:var(--gold);background:var(--surface3)}
+.cat-btn.sel-modern {border-color:var(--green);color:var(--green);background:var(--surface3)}
+.cat-btn.sel-all    {border-color:var(--accent);color:var(--accent-hl);background:var(--surface3)}
+
+/* ── weapon grid ── */
+.weapon-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:.28rem;
 }
 .weapon-card{
   display:flex;flex-direction:column;align-items:center;
-  padding:.4rem .2rem .3rem;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  cursor:pointer;
-  background:var(--surface2);
+  padding:.35rem .2rem .28rem;
+  border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;background:var(--surface2);
   transition:border-color .12s,background .12s;
-  gap:.25rem;
-  text-align:center;
+  gap:.22rem;text-align:center;
+  position:relative;
 }
 .weapon-card:hover{border-color:var(--border2);background:var(--surface3)}
 .weapon-card.sel{border-color:var(--gold);background:var(--surface3)}
+.weapon-card.hidden-card{display:none}
 .weapon-icon{
   width:32px;height:32px;
-  image-rendering:pixelated;
-  display:block;
+  image-rendering:pixelated;display:block;
 }
-.weapon-name{font-size:.6rem;color:var(--text-dim)}
+.weapon-name{font-size:.58rem;color:var(--text-dim)}
 .weapon-card.sel .weapon-name{color:var(--gold)}
-
-/* ── center preview area ── */
-.center{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  min-width:0;
+.weapon-cat-dot{
+  position:absolute;top:3px;right:4px;
+  width:5px;height:5px;border-radius:50%;
 }
+.weapon-cat-dot.fantasy{background:var(--gold-dim)}
+.weapon-cat-dot.modern {background:var(--green-dim)}
+
+/* ── center preview ── */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
 /* ── tabs ── */
 .tabs{
-  display:flex;
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  flex-shrink:0;
+  display:flex;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
 }
 .tab{
-  padding:.5rem 1.1rem;
-  cursor:pointer;
-  font-size:.75rem;
-  color:var(--text-dim);
-  border-bottom:2px solid transparent;
-  transition:color .12s,border-color .12s;
-  user-select:none;
+  padding:.48rem 1.1rem;cursor:pointer;font-size:.75rem;
+  color:var(--text-dim);border-bottom:2px solid transparent;
+  transition:color .12s,border-color .12s;user-select:none;
 }
 .tab:hover{color:var(--text)}
 .tab.sel{color:var(--accent-hl);border-bottom-color:var(--accent-hl)}
 
 /* ── canvas stage ── */
 .stage{
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--bg);
-  position:relative;
-  overflow:hidden;
+  flex:1;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);position:relative;overflow:hidden;
 }
 .stage-inner{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:.9rem;
+  display:flex;flex-direction:column;align-items:center;gap:.9rem;
 }
 .stage canvas{
   image-rendering:pixelated;
-  border:1px solid var(--border2);
-  border-radius:3px;
+  border:1px solid var(--border2);border-radius:3px;
   background:repeating-conic-gradient(var(--surface2) 0% 25%,var(--bg) 0% 50%) 0 0/16px 16px;
 }
-
-/* weapon orientations (weapon tab) */
 .orient-row{display:flex;gap:1.4rem;align-items:flex-end}
 .orient-cell{display:flex;flex-direction:column;align-items:center;gap:.35rem}
 .orient-cell canvas{
@@ -224,6 +248,7 @@ select:focus{outline:none;border-color:var(--accent)}
   background:repeating-conic-gradient(var(--surface2) 0% 25%,var(--bg) 0% 50%) 0 0/16px 16px;
 }
 .orient-label{font-size:.65rem;color:var(--text-dim)}
+.stage-label{font-size:.65rem;color:var(--text-faint)}
 
 /* ── loading overlay ── */
 .loading{
@@ -232,94 +257,50 @@ select:focus{outline:none;border-color:var(--accent)}
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;gap:.6rem;
   font-size:.8rem;color:var(--text-dim);
-  z-index:10;
-  transition:opacity .2s;
+  z-index:10;transition:opacity .2s;
 }
 .spinner{
   width:24px;height:24px;
-  border:2px solid var(--border2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin .7s linear infinite;
+  border:2px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── sub-labels ── */
-.stage-label{font-size:.65rem;color:var(--text-faint)}
-
 /* ── controls bar ── */
 .controls{
-  background:var(--surface);
-  border-top:1px solid var(--border);
-  padding:.5rem .8rem;
-  display:flex;
-  flex-direction:column;
-  gap:.4rem;
-  flex-shrink:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .8rem;display:flex;flex-direction:column;gap:.4rem;flex-shrink:0;
 }
-.ctrl-row{
-  display:flex;align-items:center;
-  gap:.45rem;flex-wrap:wrap;
-}
+.ctrl-row{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
 .ctrl-label{
-  font-size:.6rem;text-transform:uppercase;
-  letter-spacing:.08em;color:var(--text-faint);
-  min-width:36px;flex-shrink:0;
+  font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-faint);min-width:36px;flex-shrink:0;
 }
 .btn-group{display:flex;gap:2px;flex-wrap:wrap}
 .btn{
-  background:var(--surface2);
-  border:1px solid var(--border);
-  color:var(--text-dim);
-  padding:.22rem .55rem;
-  cursor:pointer;
-  font-family:inherit;
-  font-size:.72rem;
-  border-radius:3px;
-  transition:background .1s,color .1s,border-color .1s;
-  user-select:none;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text-dim);padding:.22rem .55rem;
+  cursor:pointer;font-family:inherit;font-size:.72rem;border-radius:3px;
+  transition:background .1s,color .1s,border-color .1s;user-select:none;
 }
 .btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2)}
 .btn.sel{background:var(--accent);border-color:var(--accent);color:#fff}
-
 .fps-row{display:flex;align-items:center;gap:.4rem}
-input[type=range]{
-  accent-color:var(--accent);width:70px;cursor:pointer;
-  vertical-align:middle;
-}
+input[type=range]{accent-color:var(--accent);width:70px;cursor:pointer;vertical-align:middle}
 .fps-val{font-size:.7rem;color:var(--text-dim);min-width:18px}
-
-/* spacer */
 .ctrl-spacer{flex:1}
-
-/* ── export buttons ── */
 .btn-export{
-  background:transparent;
-  border:1px solid var(--gold-dim);
-  color:var(--gold);
-  padding:.22rem .65rem;
-  cursor:pointer;
-  font-family:inherit;
-  font-size:.72rem;
-  border-radius:3px;
-  transition:background .12s,border-color .12s;
-  white-space:nowrap;
+  background:transparent;border:1px solid var(--gold-dim);color:var(--gold);
+  padding:.22rem .65rem;cursor:pointer;font-family:inherit;font-size:.72rem;
+  border-radius:3px;transition:background .12s,border-color .12s;white-space:nowrap;
 }
 .btn-export:hover{background:rgba(240,184,60,.1);border-color:var(--gold)}
 .btn-export:active{background:rgba(240,184,60,.2)}
-
-/* ── pixel zoom badge ── */
 .zoom-badge{
   display:inline-flex;align-items:center;gap:.3rem;
   font-size:.65rem;color:var(--text-faint);
 }
-.zoom-badge select{
-  width:auto;padding:.2rem .9rem .2rem .3rem;
-  font-size:.65rem;
-  background-color:var(--surface2);
-}
-
-/* ── anim row hidden in weapon tab ── */
+.zoom-badge select{width:auto;padding:.2rem .9rem .2rem .3rem;font-size:.65rem}
 .hidden{display:none !important}
 </style>
 </head>
@@ -327,18 +308,20 @@ input[type=range]{
 
 <!-- ═══════════ HEADER ═══════════ -->
 <header>
-  <h1>⚔️ Character Studio</h1>
+  <h1>Character Studio</h1>
   <span class="header-sub">32 × 32 pixel sprite generator</span>
   <div class="header-spacer"></div>
+  <span class="header-tag">Chicago · Reality &amp; Fantasy</span>
   <span class="header-tag">walk · jump · crouch · interact · slash</span>
 </header>
 
 <!-- ═══════════ MAIN ═══════════ -->
 <div class="main">
 
-  <!-- ─── LEFT SIDEBAR: character config ─── -->
+  <!-- ─── LEFT SIDEBAR ─── -->
   <aside class="sidebar sidebar-l">
 
+    <!-- Presets -->
     <div>
       <div class="section-hd">Preset</div>
       <div class="preset-list" id="preset-list">
@@ -358,6 +341,7 @@ input[type=range]{
       </div>
     </div>
 
+    <!-- Hair style -->
     <div class="field">
       <label>Hair Style</label>
       <select id="hair-sel" onchange="onSettingsChange()">
@@ -367,19 +351,69 @@ input[type=range]{
       </select>
     </div>
 
+    <!-- Color customization -->
+    <div>
+      <div class="section-hd">
+        Colors
+        <button onclick="resetColors()" title="Reset to preset defaults">↺ reset</button>
+      </div>
+      <div class="color-grid">
+        <div class="color-row">
+          <label>Skin</label>
+          <div class="color-wrap">
+            <input type="color" id="c-skin"  oninput="onColorInput('skin',this)"  onchange="onColorChange()">
+            <span class="hex-val" id="hv-skin"  onclick="copyHex('c-skin')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Hair</label>
+          <div class="color-wrap">
+            <input type="color" id="c-hair"  oninput="onColorInput('hair',this)"  onchange="onColorChange()">
+            <span class="hex-val" id="hv-hair"  onclick="copyHex('c-hair')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Shirt</label>
+          <div class="color-wrap">
+            <input type="color" id="c-shirt" oninput="onColorInput('shirt',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-shirt" onclick="copyHex('c-shirt')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Pants</label>
+          <div class="color-wrap">
+            <input type="color" id="c-pants" oninput="onColorInput('pants',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-pants" onclick="copyHex('c-pants')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Shoes</label>
+          <div class="color-wrap">
+            <input type="color" id="c-shoes" oninput="onColorInput('shoes',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-shoes" onclick="copyHex('c-shoes')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Eyes</label>
+          <div class="color-wrap">
+            <input type="color" id="c-eye"   oninput="onColorInput('eye',this)"   onchange="onColorChange()">
+            <span class="hex-val" id="hv-eye"   onclick="copyHex('c-eye')">#------</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </aside>
 
   <!-- ─── CENTER: preview ─── -->
   <div class="center">
 
-    <!-- Tab bar -->
     <div class="tabs">
       <div class="tab sel" data-tab="character" onclick="switchTab('character',this)">Character</div>
       <div class="tab"     data-tab="weapon"    onclick="switchTab('weapon',this)">Weapon</div>
-      <div class="tab"     data-tab="equipped"  onclick="switchTab('equipped',this)">Equipped ⚔️</div>
+      <div class="tab"     data-tab="equipped"  onclick="switchTab('equipped',this)">Equipped</div>
     </div>
 
-    <!-- Stage -->
     <div class="stage" id="stage">
 
       <!-- Character tab -->
@@ -398,9 +432,7 @@ input[type=range]{
 
       <!-- Weapon tab -->
       <div id="tab-weapon" class="stage-inner hidden">
-        <div class="orient-row" id="orient-row">
-          <!-- filled by JS -->
-        </div>
+        <div class="orient-row" id="orient-row"></div>
         <span class="stage-label">4 orientations (E · S · W · N) at 4× zoom</span>
       </div>
 
@@ -426,7 +458,6 @@ input[type=range]{
 
     <!-- Controls bar -->
     <div class="controls">
-      <!-- Animation row (hidden on weapon tab) -->
       <div class="ctrl-row" id="anim-row">
         <span class="ctrl-label">Anim</span>
         <div class="btn-group" id="anim-btns">
@@ -436,7 +467,6 @@ input[type=range]{
           {% endfor %}
         </div>
       </div>
-      <!-- Direction + FPS + export row -->
       <div class="ctrl-row">
         <span class="ctrl-label">Dir</span>
         <div class="btn-group" id="dir-btns">
@@ -460,19 +490,29 @@ input[type=range]{
 
   </div><!-- /center -->
 
-  <!-- ─── RIGHT SIDEBAR: weapon config ─── -->
+  <!-- ─── RIGHT SIDEBAR: weapons ─── -->
   <aside class="sidebar sidebar-r">
 
     <div>
       <div class="section-hd">Weapon</div>
+
+      <!-- Category filter -->
+      <div class="cat-tabs">
+        <button class="cat-btn sel-all"     onclick="filterWeapons('all',this)">All</button>
+        <button class="cat-btn"             onclick="filterWeapons('fantasy',this)">⚔ Fantasy</button>
+        <button class="cat-btn"             onclick="filterWeapons('modern',this)">⚡ Modern</button>
+      </div>
+
       <div class="weapon-grid" id="weapon-grid">
-        {% for w in weapons %}
+        {% for w in weapons_meta %}
         <div class="weapon-card{% if loop.index0==0 %} sel{% endif %}"
-             data-weapon="{{ w }}"
-             onclick="selectWeapon('{{w}}',this)">
-          <canvas class="weapon-icon" id="wicon-{{w}}" width="32" height="32"
-                  title="{{ w }}"></canvas>
-          <span class="weapon-name">{{ w }}</span>
+             data-weapon="{{ w.name }}"
+             data-category="{{ w.category }}"
+             onclick="selectWeapon('{{w.name}}',this)">
+          <span class="weapon-cat-dot {{ w.category }}"></span>
+          <canvas class="weapon-icon" id="wicon-{{w.name}}" width="32" height="32"
+                  title="{{ w.name }}"></canvas>
+          <span class="weapon-name">{{ w.name }}</span>
         </div>
         {% endfor %}
       </div>
@@ -484,7 +524,7 @@ input[type=range]{
 
 <!-- ═══════════ SCRIPT ═══════════ -->
 <script>
-/* ── constants from server ── */
+/* ── server-injected constants ── */
 const ANIMATIONS   = {{ animations    | tojson }};
 const DIRECTIONS   = {{ directions    | tojson }};
 const PRESETS_DATA = {{ presets       | tojson }};
@@ -505,12 +545,78 @@ let zoom      = 6;
 let frameIdx  = 0;
 let animTimer = null;
 
-/* loaded Image objects */
 let charImg = null;
 let eqImg   = null;
 let wpnImg  = null;
 
-/* ── helpers ── */
+/* ── color helpers ── */
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function syncPickersToPreset(idx) {
+  const p = PRESETS_DATA[idx];
+  const slots = [
+    ['c-skin',  'hv-skin',  p.skin],
+    ['c-hair',  'hv-hair',  p.hair],
+    ['c-shirt', 'hv-shirt', p.shirt],
+    ['c-pants', 'hv-pants', p.pants],
+    ['c-shoes', 'hv-shoes', p.shoes],
+    ['c-eye',   'hv-eye',   p.eye],
+  ];
+  slots.forEach(([id, hvId, rgb]) => {
+    const hex = rgbToHex(...rgb);
+    document.getElementById(id).value = hex;
+    document.getElementById(hvId).textContent = hex;
+  });
+}
+
+function colorParams() {
+  return [
+    'skin_hex='  + document.getElementById('c-skin').value.slice(1),
+    'hair_hex='  + document.getElementById('c-hair').value.slice(1),
+    'shirt_hex=' + document.getElementById('c-shirt').value.slice(1),
+    'pants_hex=' + document.getElementById('c-pants').value.slice(1),
+    'shoes_hex=' + document.getElementById('c-shoes').value.slice(1),
+    'eye_hex='   + document.getElementById('c-eye').value.slice(1),
+  ].join('&');
+}
+
+function onColorInput(slot, el) {
+  document.getElementById('hv-' + slot).textContent = el.value;
+}
+
+function onColorChange() {
+  debouncedRefresh();
+}
+
+function resetColors() {
+  syncPickersToPreset(preset);
+  debouncedRefresh();
+}
+
+function copyHex(id) {
+  const val = document.getElementById(id).value;
+  navigator.clipboard?.writeText(val).catch(() => {});
+}
+
+/* ── weapon category filter ── */
+let activeCategory = 'all';
+
+function filterWeapons(cat, el) {
+  activeCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = 'cat-btn';
+  });
+  el.classList.add('sel-' + cat);
+
+  document.querySelectorAll('.weapon-card').forEach(card => {
+    const cardCat = card.dataset.category;
+    card.classList.toggle('hidden-card', cat !== 'all' && cardCat !== cat);
+  });
+}
+
+/* ── canvas helpers ── */
 function getRow(a, d) {
   return ANIMATIONS.indexOf(a) * DIRECTIONS.length + DIRECTIONS.indexOf(d);
 }
@@ -523,7 +629,6 @@ function drawFrame(canvas, img, a, d, f, z) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // checkerboard bg (redrawn each frame because canvas was resized)
   const sq = 8;
   for (let y = 0; y < canvas.height; y += sq)
     for (let x = 0; x < canvas.width; x += sq) {
@@ -540,7 +645,6 @@ function showLoading(visible, msg) {
   if (msg) document.getElementById('loading-msg').textContent = msg;
 }
 
-/* ── fetch helpers (return Promise<Image>) ── */
 function fetchImg(url) {
   return fetch(url)
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -552,7 +656,6 @@ function fetchImg(url) {
     }));
 }
 
-/* ── debounce utility ── */
 function debounce(fn, ms) {
   let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 }
@@ -575,8 +678,9 @@ function startLoop() {
 /* ── refresh functions ── */
 function refreshChar() {
   showLoading(true, 'Generating character…');
-  return fetchImg(`/api/character?preset=${preset}&hair=${hair}`)
-    .then(img => { charImg = img; if (tab==='character') tick(); })
+  const cp = colorParams();
+  return fetchImg(`/api/character?preset=${preset}&hair=${hair}&${cp}`)
+    .then(img => { charImg = img; if (tab === 'character') tick(); })
     .finally(() => showLoading(false));
 }
 
@@ -585,7 +689,7 @@ function refreshWeapon() {
   return fetchImg(`/api/weapon?weapon=${weapon}`)
     .then(img => {
       wpnImg = img;
-      renderWeaponIcons(weapon, img);
+      renderWeaponIcon(weapon, img);
       if (tab === 'weapon') renderOrients(img);
     })
     .finally(() => showLoading(false));
@@ -594,28 +698,22 @@ function refreshWeapon() {
 function refreshEquipped() {
   showLoading(true, 'Generating equipped…');
   eqImg = null;
-  return fetchImg(`/api/equipped?preset=${preset}&hair=${hair}&weapon=${weapon}`)
-    .then(img => { eqImg = img; if (tab==='equipped') tick(); })
+  const cp = colorParams();
+  return fetchImg(`/api/equipped?preset=${preset}&hair=${hair}&weapon=${weapon}&${cp}`)
+    .then(img => { eqImg = img; if (tab === 'equipped') tick(); })
     .finally(() => showLoading(false));
 }
 
-/* One-time icon load for all weapons in sidebar */
+/* ── weapon icon loading ── */
 function loadAllWeaponIcons() {
   WEAPONS.forEach(w => {
     fetchImg(`/api/weapon?weapon=${w}`).then(img => {
-      const cv = document.getElementById('wicon-' + w);
-      if (!cv) return;
-      cv.width = cv.height = 32;
-      const ctx = cv.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      // Draw east-facing frame (frame 0)
-      ctx.drawImage(img, 0, 0, FW, FH, 0, 0, 32, 32);
+      renderWeaponIcon(w, img);
     }).catch(() => {});
   });
 }
 
-/* Update the currently-selected weapon icon (re-draw after new weapon loaded) */
-function renderWeaponIcons(w, img) {
+function renderWeaponIcon(w, img) {
   const cv = document.getElementById('wicon-' + w);
   if (!cv) return;
   cv.width = cv.height = 32;
@@ -624,13 +722,14 @@ function renderWeaponIcons(w, img) {
   ctx.drawImage(img, 0, 0, FW, FH, 0, 0, 32, 32);
 }
 
-/* Weapon tab: 4-orientation grid */
+/* ── weapon tab: 4-orientation grid ── */
 const ORIENTS = ['east','south','west','north'];
 const ORIENT_ARROWS = {east:'→', south:'↓', west:'←', north:'↑'};
+
 function renderOrients(img) {
   const row = document.getElementById('orient-row');
   row.innerHTML = '';
-  const SZ = 4; // 4× zoom for orient grid
+  const SZ = 4;
   ORIENTS.forEach((o, i) => {
     const cell = document.createElement('div');
     cell.className = 'orient-cell';
@@ -638,7 +737,6 @@ function renderOrients(img) {
     cv.width = FW * SZ; cv.height = FH * SZ;
     const ctx = cv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    // Checkerboard
     const sq = 8;
     for (let y = 0; y < cv.height; y += sq)
       for (let x = 0; x < cv.width; x += sq) {
@@ -657,12 +755,11 @@ function renderOrients(img) {
 /* ── event handlers ── */
 function selectPreset(idx, el) {
   preset = idx;
-  const pdata = PRESETS_DATA[idx];
-  // Update hair to preset default
-  hair = pdata.default_hair;
+  hair = PRESETS_DATA[idx].default_hair;
   document.getElementById('hair-sel').value = hair;
   document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('sel'));
   el.classList.add('sel');
+  syncPickersToPreset(idx);
   debouncedRefresh();
 }
 
@@ -674,15 +771,13 @@ function selectWeapon(w, el) {
 }
 
 function selectAnim(a, el) {
-  anim = a;
-  frameIdx = 0;
+  anim = a; frameIdx = 0;
   document.querySelectorAll('#anim-btns .btn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
 }
 
 function selectDir(d, el) {
-  dir = d;
-  frameIdx = 0;
+  dir = d; frameIdx = 0;
   document.querySelectorAll('#dir-btns .btn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
 }
@@ -691,20 +786,12 @@ function switchTab(t, el) {
   tab = t;
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('sel'));
   el.classList.add('sel');
-
-  // Show/hide stage panels
   ['character','weapon','equipped'].forEach(id => {
     document.getElementById('tab-' + id).classList.toggle('hidden', id !== t);
   });
-
-  // Hide anim controls on weapon tab
   document.getElementById('anim-row').classList.toggle('hidden', t === 'weapon');
-
   if (t === 'weapon' && wpnImg) renderOrients(wpnImg);
-  if (t === 'equipped') {
-    if (!eqImg) refreshEquipped();
-    else tick();
-  }
+  if (t === 'equipped') { if (!eqImg) refreshEquipped(); else tick(); }
   if (t === 'character' && charImg) tick();
 }
 
@@ -717,7 +804,6 @@ function onZoomChange() {
   zoom = +(document.getElementById(
     tab === 'equipped' ? 'eq-zoom' : 'char-zoom'
   ).value);
-  // Sync both selects if user changes one
   document.getElementById('char-zoom').value = zoom;
   document.getElementById('eq-zoom').value   = zoom;
 }
@@ -728,16 +814,16 @@ function setFps(v) {
   startLoop();
 }
 
-/* debounced full refresh (char + weapon + equipped if open) */
 const debouncedRefresh = debounce(() => {
   const jobs = [refreshChar(), refreshWeapon()];
   if (tab === 'equipped') jobs.push(refreshEquipped());
-  else eqImg = null; // invalidate so it re-generates when tab is opened
-}, 200);
+  else eqImg = null;
+}, 220);
 
 /* ── export ── */
 function exportSheet(kind) {
-  const url = `/api/export?kind=${kind}&preset=${preset}&hair=${hair}&weapon=${weapon}`;
+  const cp  = colorParams();
+  const url = `/api/export?kind=${kind}&preset=${preset}&hair=${hair}&weapon=${weapon}&${cp}`;
   const a   = document.createElement('a');
   a.href    = url;
   a.click();
@@ -745,6 +831,7 @@ function exportSheet(kind) {
 
 /* ── init ── */
 window.addEventListener('load', () => {
+  syncPickersToPreset(0);
   loadAllWeaponIcons();
   Promise.all([refreshChar(), refreshWeapon()]).then(() => startLoop());
 });
