@@ -156,5 +156,5 @@ def api_export():
 
 if __name__ == "__main__":
     print("\n  ⚔️  Character Studio")
-    print("  Open → http://localhost:3000\n")
-    app.run(debug=False, host="0.0.0.0", port=3000)
+    print("  Open → http://localhost:8765\n")
+    app.run(debug=False, host="0.0.0.0", port=8765)
