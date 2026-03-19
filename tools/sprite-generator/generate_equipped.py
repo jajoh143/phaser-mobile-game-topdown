@@ -343,6 +343,86 @@ if(img.complete) setInterval(draw,1000/FPS);
 """
 
 
+# ---------------------------------------------------------------------------
+# CARRY ANCHORS  (non-slash animations: walk, jump, crouch, interact)
+#
+# The weapon rests in the character's hand in a "carry" pose.
+# Walk frames add a small bob/sway delta on top of the carry position.
+# ---------------------------------------------------------------------------
+
+_CARRY_ANCHORS = {
+    "down":  {"orient": "east",  "x": 22, "y": 19, "angle": -20},
+    "left":  {"orient": "west",  "x":  7, "y": 18, "angle":   0},
+    "right": {"orient": "east",  "x": 24, "y": 18, "angle":   0},
+    "up":    {"orient": "west",  "x": 10, "y": 19, "angle": -20},
+}
+
+# Per-frame walk delta (dx, dy) added to the carry anchor.
+# Frames 0-3 map to walk frames 0-3. Other animations use frame 0 delta (0,0).
+_WALK_DELTAS = {
+    "down":  [(0, 0), ( 1, -1), (0,  1), (-1, 0)],
+    "left":  [(0, 0), (-1, -1), (0,  1), ( 1, 0)],
+    "right": [(0, 0), ( 1, -1), (0,  1), (-1, 0)],
+    "up":    [(0, 0), (-1, -1), (0,  1), ( 1, 0)],
+}
+
+
+def build_anchor_data() -> dict:
+    """
+    Build a complete hand-anchor data structure for all animations, directions,
+    and frames. Used by the Phaser runtime to position a weapon sprite overlay.
+
+    Returns a nested dict:
+        {
+          "walk": {
+            "down": [
+              {"x": 22, "y": 19, "angle": -20, "orient": "east"},  # frame 0
+              ...
+            ],
+            ...
+          },
+          "slash": { ... },
+          ...
+        }
+
+    Coordinates are in the native 32×32 pixel space.
+    The Phaser scene multiplies these by the character's display scale to get
+    screen-space offsets from the character sprite's origin.
+    """
+    anchors: dict = {}
+
+    for anim in ANIMATIONS:
+        anchors[anim] = {}
+        for direction in DIRECTIONS:
+            frames = []
+            if anim == "slash":
+                slash_data = _SLASH_HAND_ANCHORS[direction]
+                orient     = slash_data["orient"]
+                for frame_idx in range(FRAMES_PER_DIR):
+                    hx, hy = slash_data["anchors"][frame_idx]
+                    angle  = slash_data["angle"][frame_idx]
+                    frames.append({
+                        "x":      hx,
+                        "y":      hy,
+                        "angle":  angle,
+                        "orient": orient,
+                    })
+            else:
+                carry  = _CARRY_ANCHORS[direction]
+                deltas = _WALK_DELTAS[direction] if anim == "walk" else [(0, 0)] * FRAMES_PER_DIR
+                for frame_idx in range(FRAMES_PER_DIR):
+                    dx, dy = deltas[frame_idx]
+                    frames.append({
+                        "x":      carry["x"] + dx,
+                        "y":      carry["y"] + dy,
+                        "angle":  carry["angle"],
+                        "orient": carry["orient"],
+                    })
+            anchors[anim][direction] = frames
+
+    return anchors
+
+
 def _load_char_sheet(preset_idx: int, char_name: str) -> Image.Image:
     """Load character sheet, auto-generating it (and saving to disk) if missing."""
     tag  = f"preset{preset_idx}"
