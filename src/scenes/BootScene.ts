@@ -6,11 +6,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    // Generate placeholder textures programmatically so the game
-    // works without external asset files.
-    this.generateTextures()
     this.scene.start('PreloadScene')
   }
+<<<<<<< HEAD
 
   private generateTextures() {
     // Player sprite sheet: 4 directions × 3 frames (idle + 2 walk)
@@ -241,4 +239,6 @@ export class BootScene extends Phaser.Scene {
     tileGfx.generateTexture('tiles', 64, 32)
     tileGfx.destroy()
   }
+=======
+>>>>>>> claude/sprite-builder-aseprite-knWJP
 }

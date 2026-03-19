@@ -8,7 +8,7 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     // Show a simple loading bar
     const { width, height } = this.cameras.main
-    const bar = this.add.graphics()
+    const bar    = this.add.graphics()
     const border = this.add.graphics()
 
     border.lineStyle(2, 0xffffff, 1)
@@ -20,10 +20,18 @@ export class PreloadScene extends Phaser.Scene {
       bar.fillRect(width / 2 - 118, height / 2 - 8, 236 * value, 16)
     })
 
-    // If you add real assets later, load them here:
-    // this.load.image('tileset', 'assets/tileset.png')
-    // this.load.tilemapTiledJSON('map', 'assets/map.json')
-    // this.load.atlas('player', 'assets/player.png', 'assets/player.json')
+    // Player sprite sheet — 3 cols (idle, walk-1, walk-2) × 4 rows (down, up, left, right)
+    // Each frame is 16×16 px; Phaser numbers frames 0-11 in row-major order.
+    this.load.spritesheet('player', 'assets/player.png', {
+      frameWidth:  16,
+      frameHeight: 16,
+    })
+
+    // NPC character sprite (16×16, single frame)
+    this.load.image('npc', 'assets/npc.png')
+
+    // World tile sheet — two 32×32 tiles side by side (grass at x=0, wall at x=32)
+    this.load.image('tiles', 'assets/tiles.png')
   }
 
   create() {

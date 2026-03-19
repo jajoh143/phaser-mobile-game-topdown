@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "generate-assets": "node scripts/generate-assets.js",
+    "dev": "npm run generate-assets && vite",
+    "build": "npm run generate-assets && tsc && vite build",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync",
     "cap:android": "npm run cap:sync && npx cap open android",
