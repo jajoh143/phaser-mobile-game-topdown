@@ -687,11 +687,11 @@ def _build_body_left():
     p += _row(7, 7, 22, "skin")           # 16px
     for y in range(8, 11):
         p += _row(y, 6, 23, "skin")       # 18px - well-lit
-    # Crescent side shadow on back-of-head edge (side view)
+    # Crescent side shadow on back-of-head edge (wider for clear profile)
     for y in range(11, 13):
         row = _row(y, 6, 23, "skin")
         for i, (px, py, pc) in enumerate(row):
-            if pc == "skin" and px >= 22:
+            if pc == "skin" and px >= 20:
                 row[i] = (px, py, "skin_shade")
         p += row
     p += _row(13, 7, 22, "skin")          # 16px - transitional
@@ -707,22 +707,22 @@ def _build_body_left():
     p.append((8, 15, "skin_aa"))    # left inner corner (14→12)
     p.append((21, 15, "skin_aa"))   # right inner corner
 
-    # Forehead highlight (left-biased for side view)
-    for x in range(9, 16):
+    # Forehead highlight (shifted inward for profile)
+    for x in range(10, 17):
         p.append((x, 8, "skin_highlight"))
 
-    # One eye visible (left side) — 2x2 with catchlight, placed toward front of face
-    p.append((9, 10, "eye"))              # dark upper-left
-    p.append((10, 10, "eye_highlight"))   # catchlight upper-right
-    p.append((9, 11, "eye"))              # dark lower-left
-    p.append((10, 11, "eye_white"))       # sclera lower-right
+    # One eye visible — 2x2 with catchlight, set back ~28% from front for profile
+    p.append((10, 10, "eye"))             # dark upper-left
+    p.append((11, 10, "eye_highlight"))   # catchlight upper-right
+    p.append((10, 11, "eye"))             # dark lower-left
+    p.append((11, 11, "eye_white"))       # sclera lower-right
 
     # Nose — 1px bump on front edge of face profile at y=12
     # Extends 1px forward from face edge for profile silhouette
     p.append((5, 12, "nose_shadow"))
 
-    # Mouth — 1px on front edge at y=13
-    p.append((6, 13, "mouth"))
+    # Mouth — 1px, slightly inset from front edge at y=13
+    p.append((7, 13, "mouth"))
 
     # --- Torso (side, smooth taper) ---
     p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
@@ -938,8 +938,8 @@ def _region_for_pixel(x, y, direction):
 _SHOULDERS = {
     "down":  ((9, 18), (22, 18)),      # widened for shoulder flare
     "up":    ((9, 18), (22, 18)),
-    "left":  ((16, 18), (21, 18)),     # back arm at wider shoulder edge
-    "right": ((10, 18), (15, 18)),     # back arm at wider shoulder edge
+    "left":  ((9, 18), (21, 18)),      # front arm at front edge, back arm hidden
+    "right": ((10, 18), (22, 18)),     # back arm hidden, front arm at front edge
 }
 
 # Arm pose definitions: pixel offsets from shoulder pivot.
