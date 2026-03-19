@@ -46,6 +46,10 @@ ANIMATIONS = ["walk", "jump", "crouch", "interact", "slash"]
 FRAMES_PER_DIR = 4
 ORIENTATIONS = ["east", "south", "west", "north"]
 
+# Weapons are drawn at 32×32 but the chibi character body only occupies
+# roughly half the frame height. Scale weapons down so they feel proportional.
+WEAPON_SCALE = 0.5
+
 # ---------------------------------------------------------------------------
 # WEAPON HAND ANCHORS
 #
@@ -171,10 +175,18 @@ def _rotate_weapon(frame: Image.Image, angle_deg: float) -> Image.Image:
 def _overlay_weapon(char_frame: Image.Image, weapon_frame: Image.Image,
                     hand_x: int, hand_y: int, angle_deg: float) -> Image.Image:
     """
-    Overlay a rotated weapon onto a character frame.
-    The weapon is rotated then placed so its center is at (hand_x, hand_y).
+    Overlay a scaled + rotated weapon onto a character frame.
+    The weapon is scaled to WEAPON_SCALE, rotated, then placed so its
+    center is at (hand_x, hand_y).
     """
     result = char_frame.copy()
+
+    # Scale weapon down to match chibi character proportions
+    if WEAPON_SCALE != 1.0:
+        new_w = max(1, round(weapon_frame.width  * WEAPON_SCALE))
+        new_h = max(1, round(weapon_frame.height * WEAPON_SCALE))
+        weapon_frame = weapon_frame.resize((new_w, new_h), Image.NEAREST)
+
     rot_weapon = _rotate_weapon(weapon_frame, angle_deg)
 
     # Center the rotated weapon at the hand anchor
