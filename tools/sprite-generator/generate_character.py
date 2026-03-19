@@ -7,13 +7,15 @@ Generates 32x32 spritesheets with SNES-inspired chibi proportions:
     forehead highlight for 3/4 top-down depth
   - Shoulder step-out (14px) tapering to waist (10px) with belt-line detail
   - 2px leg gap for clear readability in front/back views
-  - 3px-wide arms on shoulder-pivot overlay system with enhanced walk cycle:
-      * Front/back walk: 4 distinct arm poses (mid_fwd/peak/mid_back/peak)
-        so all 4 frames differ — no repeated neutral frames
-      * Side walk: front arm swings full arc (side_hang→fwd→hang→back);
-        back arm peeks from behind body using skin_shade + outline pixels,
-        giving depth and bilateral movement to the side-view cycle
-      * side_fwd/side_back extended to 5-6 rows for consistent arm length
+  - Arms: shoulder-pivot overlay system with human-like shading and joints:
+      * Front/back view: 3px with inner arm shadow (body-side pixel = skin_shade
+        for tube depth) + 1px elbow bump at joint row + shaded forearm
+      * Side view: 4px wide with back-face shadow (skin_shade + outline) giving
+        a round tube cross-section visible in profile
+      * Walk cycle: 4 fully distinct arm poses per cycle — mid_fwd/peak swing_fwd/
+        mid_back/peak swing_back — no repeated neutral frames
+      * Side walk: front arm swings full arc; back arm peeks from behind body
+        using peek poses (skin_shade + outline) for bilateral depth
   - Detailed hair with 3-tone shading (highlight, base, shade)
   - Clothing with shirt/pants/shoes distinction and belt-line detail
   - Hue-shifted shadows (cool-shifted) for depth and richness
@@ -268,6 +270,23 @@ def _derive_palette(preset: dict) -> dict:
         max(sdg - 40, 0),
         max(sdb - 30, 0),
         sa,
+    )
+
+    # Cheek blush — warm rosy tint for cheek accent marks (subtle warmth boost)
+    pal["blush"] = (
+        min(sr + 18, 255),
+        max(sg - 10, 0),
+        max(sb - 20, 0),
+        sa,
+    )
+
+    # Eyebrow — slightly darker than hair, for definition against face
+    hr, hg, hb, ha = pal["hair_shade"]
+    pal["eyebrow"] = (
+        max(hr - 12, 0),
+        max(hg - 12, 0),
+        max(hb - 12, 0),
+        ha,
     )
 
     return pal
@@ -580,6 +599,13 @@ def _build_body_down():
     for x in range(11, 18):
         p.append((x, 8, "skin_highlight"))
 
+    # Eyebrows — 2px each, at y=9, using eyebrow color (slightly darker than hair_shade).
+    # Placed directly above the eyes for classic chibi expression.
+    p.append((11, 9, "eyebrow"))   # left brow: above left eye
+    p.append((12, 9, "eyebrow"))
+    p.append((19, 9, "eyebrow"))   # right brow: above right eye
+    p.append((20, 9, "eyebrow"))
+
     # Eyes — 2w x 2h per eye with catchlight, placed at y=10-11
     # Chibi-style: eyes closer together for cute proportions.
     # Left eye (x=11-12), Right eye (x=19-20) — 6px gap between eyes
@@ -596,10 +622,20 @@ def _build_body_down():
     # Subtle: uses nose_shadow (midpoint skin/skin_shade), not black
     p.append((15, 12, "nose_shadow"))
 
-    # Mouth — 2px horizontal line at y=13 (between nose and chin shadow)
-    # Uses muted warm brown-pink, darker than skin_shade
+    # Cheek blush — warm rosy accent under outer eye corners at y=12
+    # Left cheek at x=9-10, right cheek at x=21-22 (just inside crescent shadow)
+    p.append((9,  12, "blush"))
+    p.append((10, 12, "blush"))
+    p.append((21, 12, "blush"))
+    p.append((22, 12, "blush"))
+
+    # Mouth — 4px wide subtle smile at y=13, with slight upward corners.
+    # Wider than before (was 2px) for better facial expressiveness.
+    # Corner pixels use nose_shadow (lighter) to suggest a gentle curve.
+    p.append((14, 13, "nose_shadow"))  # left smile corner (lighter)
     p.append((15, 13, "mouth"))
     p.append((16, 13, "mouth"))
+    p.append((17, 13, "nose_shadow"))  # right smile corner (lighter)
     p.append((19, 11, "eye_white"))       # right eye: sclera lower-left
     p.append((20, 11, "eye"))             # right eye: dark lower-right
 
@@ -710,17 +746,28 @@ def _build_body_left():
     for x in range(9, 16):
         p.append((x, 8, "skin_highlight"))
 
+    # Eyebrow — 2px above the visible eye, at y=9.
+    # Placed just above the eye at x=9-10.
+    p.append((9, 9, "eyebrow"))
+    p.append((10, 9, "eyebrow"))
+
     # One eye visible (left side) — 2x2 with catchlight, placed toward front of face
     p.append((9, 10, "eye"))              # dark upper-left
     p.append((10, 10, "eye_highlight"))   # catchlight upper-right
     p.append((9, 11, "eye"))              # dark lower-left
     p.append((10, 11, "eye_white"))       # sclera lower-right
 
-    # Nose — 1px bump on front edge of face profile at y=12
-    # Extends 1px forward from face edge for profile silhouette
+    # Cheek blush — warm accent pixel below and outside the eye at y=12
+    p.append((7, 12, "blush"))
+    p.append((8, 12, "blush"))
+
+    # Nose — 2px profile bump at front edge of face (y=11-12)
+    # 2 stacked pixels give a clearer nose bridge silhouette in profile.
+    p.append((5, 11, "nose_shadow"))
     p.append((5, 12, "nose_shadow"))
 
-    # Mouth — 1px on front edge at y=13
+    # Mouth — 1px on front edge at y=13, plus inner pixel for lips
+    p.append((5, 13, "nose_shadow"))   # upper lip profile (lighter)
     p.append((6, 13, "mouth"))
 
     # --- Torso (side, smooth taper) ---
@@ -948,105 +995,125 @@ _SHOULDERS = {
 
 _ARM_POSE_LEFT = {
     "rest":       [],
+    # hang: arm rests at side.
+    # Inner pixel (dx=-1, body-facing) uses skin_shade for tube roundness.
+    # Elbow row (dy=3): 1 extra pixel outward (dx=-4) to suggest the joint.
+    # Forearm (dy=4-5): all skin_shade — further from light, turning away.
     "hang":       [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
+        (-1, 0, "skin_shade"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        # Elbow: protrudes 1px outward; adjacent pixel shifts to skin_shade for curve
+        (-1, 3, "skin"),       (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        # Forearm
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
-    # swing_fwd: peak forward swing (arm lifted, pivoted toward camera for down view)
+    # swing_fwd: peak forward swing. Elbow at dy=1 (shorter upper arm visible from front).
     "swing_fwd":  [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, -1, "skin"),      (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        # Elbow
+        (-1, 1,  "skin"),      (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        # Forearm
+        (-1, 2,  "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
     ],
-    # mid_fwd: intermediate between hang and swing_fwd (passing position slightly forward)
+    # mid_fwd: intermediate position between hang and swing_fwd.
     "mid_fwd": [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+        (-1, -1, "skin"),      (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-1, 1,  "skin_shade"), (-2, 1,  "skin"), (-3, 1,  "outline"),
+        # Elbow
+        (-1, 2,  "skin"),      (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        # Forearm
+        (-1, 3,  "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4,  "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
     ],
-    # swing_back: peak backward swing (arm dropped behind body)
+    # swing_back: peak backward swing. Elbow at dy=4.
     "swing_back": [
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin"), (-2, 4, "skin"), (-3, 4, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin"), (-3, 3, "outline"),
+        # Elbow
+        (-1, 4, "skin"),       (-2, 4, "skin"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        # Forearm
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
         (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "outline"),
     ],
-    # mid_back: intermediate between hang and swing_back (passing position slightly back)
+    # mid_back: intermediate position between hang and swing_back.
     "mid_back": [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 0, "skin_shade"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        # Elbow
+        (-1, 3, "skin"),       (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        # Forearm
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
+    # raised: arm angled up-and-out diagonally. Inner pixel shaded on each segment.
     "raised":     [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-4, -3, "skin"), (-5, -3, "skin"), (-6, -3, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-2, -1, "skin_shade"), (-3, -1, "skin"), (-4, -1, "outline"),
+        (-3, -2, "skin_shade"), (-4, -2, "skin"), (-5, -2, "outline"),
+        (-4, -3, "skin_shade"), (-5, -3, "skin_shade"), (-6, -3, "outline"),
     ],
+    # reach_up: arm reaching upward diagonally.
     "reach_up":   [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-3, -3, "skin"), (-4, -3, "skin"), (-5, -3, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-2, -1, "skin_shade"), (-3, -1, "skin"), (-4, -1, "outline"),
+        (-3, -2, "skin_shade"), (-4, -2, "skin"), (-5, -2, "outline"),
+        (-3, -3, "skin_shade"), (-4, -3, "skin"), (-5, -3, "outline"),
     ],
-    # Side views — 3px wide
+    # Side views — 4px wide for a rounder tube look.
+    # dx=-1: front face (toward viewer/camera) = skin (lit)
+    # dx=-2: center = skin
+    # dx=-3: back face (away from viewer) = skin_shade (shadowed)
+    # dx=-4: outer edge = outline
+    # Upper arm rows use skin; forearm rows use skin_shade throughout.
     "side_hang":  [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
-        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
     ],
-    # side_fwd: arm swings forward (up in sprite). 5 rows, starts 1px above shoulder.
-    # Added extra lower row vs old 4-row version to match side_hang length better.
+    # side_fwd: arm swings forward (raised, starts 1px above shoulder).
     "side_fwd":   [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "skin_shade"), (-4, -1, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-1, 1,  "skin"), (-2, 1,  "skin"), (-3, 1,  "skin_shade"), (-4, 1,  "outline"),
+        (-1, 2,  "skin_shade"), (-2, 2,  "skin_shade"), (-3, 2,  "skin_shade"), (-4, 2,  "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3,  "skin_shade"), (-3, 3,  "skin_shade"), (-4, 3,  "outline"),
     ],
-    # side_fwd_mid: halfway between side_hang and side_fwd (smoother walk cycle)
+    # side_fwd_mid: halfway between side_hang and side_fwd.
     "side_fwd_mid": [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "skin_shade"), (-4, -1, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-1, 1,  "skin"), (-2, 1,  "skin"), (-3, 1,  "skin_shade"), (-4, 1,  "outline"),
+        (-1, 2,  "skin"), (-2, 2,  "skin"), (-3, 2,  "skin_shade"), (-4, 2,  "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3,  "skin_shade"), (-3, 3,  "skin_shade"), (-4, 3,  "outline"),
+        (-1, 4,  "skin_shade"), (-2, 4,  "skin_shade"), (-3, 4,  "skin_shade"), (-4, 4,  "outline"),
     ],
-    # side_back: arm swings backward (down in sprite). 6 rows total.
+    # side_back: arm swings backward (dropped). 6 rows.
     "side_back":  [
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
-        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
-        (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
+        (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "skin_shade"), (-4, 6, "outline"),
     ],
-    # side_back_mid: halfway between side_hang and side_back (smoother walk cycle)
+    # side_back_mid: halfway between side_hang and side_back.
     "side_back_mid": [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
-        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
     ],
     # Back-arm peek poses: 2px wide strip shown peeking from behind the body.
     # Darker (skin_shade) with outline to read as being behind the torso.
@@ -1078,30 +1145,32 @@ _ARM_POSE_LEFT = {
         (-1, 5, "skin_shade"), (-2, 5, "outline"),
         (-1, 6, "skin_shade"), (-2, 6, "outline"),
     ],
+    # side_raise: arm raised diagonally upward. 4px cross-section per segment.
     "side_raise": [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-4, -3, "skin"), (-5, -3, "skin"), (-6, -3, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "skin_shade"), (-5, -1, "outline"),
+        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "skin_shade"), (-6, -2, "outline"),
+        (-4, -3, "skin_shade"), (-5, -3, "skin_shade"), (-6, -3, "skin_shade"), (-7, -3, "outline"),
     ],
     # Interact poses — arm rotates forward from side
     "side_interact_45": [
-        # -45° from vertical: diagonal, each segment shifts 1px forward
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "outline"),
-        (-3, 2, "skin"), (-4, 2, "skin"), (-5, 2, "outline"),
-        (-4, 3, "skin"), (-5, 3, "skin"), (-6, 3, "outline"),
-        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "outline"),
+        # -45° from vertical: diagonal, each segment shifts 1px forward per row.
+        # 4px cross-section: front=skin, center=skin, back=skin_shade, edge=outline.
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "skin_shade"), (-5, 1, "outline"),
+        (-3, 2, "skin"), (-4, 2, "skin"), (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "skin_shade"), (-7, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "skin_shade"), (-8, 4, "outline"),
     ],
     "side_interact_90": [
-        # -90° from vertical: horizontal, arm points forward
-        # Width (3px) now in dy, length in dx
-        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"),
-        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"),
-        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"),
-        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"),
-        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"),
-        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"),
+        # -90° from vertical: horizontal arm pointing forward.
+        # 4px cross-section in dy: top=outline, then skin, skin, skin_shade.
+        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"), (-1, 2, "skin_shade"),
+        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"), (-2, 2, "skin_shade"),
+        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"), (-3, 2, "skin_shade"),
+        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"), (-4, 2, "skin_shade"),
+        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"), (-5, 2, "skin_shade"),
+        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"), (-6, 2, "skin_shade"),
     ],
 }
 
@@ -1550,7 +1619,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v10 — 32x32 enhanced arms: back-arm peek + 4-phase walk swing ({TILE_SIZE}px grid, {scale}x render)</p>
+<p class="info">v11 — 32x32 enhanced face (eyebrows, blush, wider mouth) + human arms (tube shading, elbow bump) ({TILE_SIZE}px grid, {scale}x render)</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
