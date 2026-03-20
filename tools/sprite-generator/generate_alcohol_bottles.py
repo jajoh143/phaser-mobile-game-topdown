@@ -526,6 +526,38 @@ BOTTLE_PIXELS = {
 
 
 # ---------------------------------------------------------------------------
+# BOTTLE SCALE
+# Bottles are drawn in the full 32x32 pixel space but look oversized relative
+# to the character sprites.  We shrink each bottle to BOTTLE_SCALE of its
+# bounding box and re-centre it inside the 32x32 cell before compositing.
+# ---------------------------------------------------------------------------
+BOTTLE_SCALE = 0.62
+
+
+def _scale_and_center(pixels: list, scale: float = BOTTLE_SCALE,
+                      frame_w: int = BOTTLE_W, frame_h: int = BOTTLE_H) -> list:
+    """Scale pixel positions by `scale` and re-centre in the frame."""
+    if not pixels:
+        return []
+    xs   = [p[0] for p in pixels]
+    ys   = [p[1] for p in pixels]
+    orig_w = max(xs) - min(xs) + 1
+    orig_h = max(ys) - min(ys) + 1
+    ox_min, oy_min = min(xs), min(ys)
+    new_w  = orig_w * scale
+    new_h  = orig_h * scale
+    dx = (frame_w - new_w) / 2 - ox_min * scale
+    dy = (frame_h - new_h) / 2 - oy_min * scale
+    scaled: dict = {}
+    for (x, y, color) in pixels:
+        nx = int(round(x * scale + dx))
+        ny = int(round(y * scale + dy))
+        if 0 <= nx < frame_w and 0 <= ny < frame_h:
+            scaled[(nx, ny)] = color   # last-write-wins for pixel collisions
+    return [(x, y, c) for (x, y), c in scaled.items()]
+
+
+# ---------------------------------------------------------------------------
 # GENERATE
 # ---------------------------------------------------------------------------
 def generate() -> Image.Image:
@@ -542,6 +574,9 @@ def generate() -> Image.Image:
         ox = i * BOTTLE_W   # x offset for this bottle cell
         pixel_fn = BOTTLE_PIXELS[name]
         raw_pixels = pixel_fn()
+
+        # Scale bottle to BOTTLE_SCALE and re-centre within the 32x32 cell
+        raw_pixels = _scale_and_center(raw_pixels)
 
         # Use a dict for last-write-wins compositing within this cell
         canvas = {}

@@ -16,16 +16,16 @@ const CAM_ZOOM = 2
 
 // 0 = wood floor  |  1 = brick wall  |  2 = bar counter
 //
-// Row 1 is the bartender's zone (open floor behind the bar).
-// Row 2 holds the bar counter, moved forward so there's space behind it.
-// Player area starts at row 3.
+// Bar is free-standing at row 4 (cols 2-8), NOT touching the side walls.
+// The player can walk around it via col 1 (west passage) or col 9 (east).
+// Row 2 = bartender zone (behind bar).  Rows 5+ = player floor.
 const MAP: number[][] = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],  // row  0 — north wall
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  1 — behind-bar floor (bartender zone)
-  [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],  // row  2 — bar counter
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  3 — floor (bar front face hangs here)
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  4
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  5
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  1 — behind-bar floor (N)
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  2 — bartender zone
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  3 — walkthrough to/from bar ends
+  [1, 0, 2, 2, 2, 2, 2, 2, 2, 0, 1],  // row  4 — bar counter (cols 2-8)
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  5 — bar front-face zone
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  6
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  7
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  // row  8  ← bat pickup
@@ -43,19 +43,22 @@ const MAP: number[][] = [
 ]
 
 // ─── Bottle placement [tile-col, spritesheet-frame] ───────────────────────────
-// Bottles sit on the bar counter surface at row 2
+// Bottles sit on the bar counter surface (row 4, cols 2-8).
 const BOTTLE_DEFS: [number, number][] = [
-  [2, 0],  // whiskey
+  [3, 0],  // whiskey
   [4, 3],  // beer
   [6, 1],  // wine
-  [8, 2],  // gin
+  [7, 2],  // gin
 ]
-const BOTTLE_ROW = 2  // bar counter row
+const BOTTLE_ROW = 4  // bar counter row
 
 // ─── Spawn positions [tile-col, tile-row] ─────────────────────────────────────
-const BAT_TILE:        [number, number] = [5, 8]   // moved one row down with bar shift
+const BAT_TILE:        [number, number] = [5, 8]   // open floor south of bar
 const PLAYER_TILE:     [number, number] = [5, 12]
-const BARTENDER_TILE:  [number, number] = [5, 1]   // center of behind-bar row
+const BARTENDER_TILE:  [number, number] = [5, 2]   // center behind bar
+
+// Range at which the player can interact with the bartender (world px)
+const BARTEND_INTERACT_DIST = 110
 
 // ─── Spritesheet frame layout (128×640, 32×32 frames) ─────────────────────────
 // ANIMATIONS = [walk, jump, crouch, interact, slash] × DIRECTIONS = [down, left, right, up]
@@ -103,6 +106,10 @@ export class BarScene extends Phaser.Scene {
   private attacking   = false
   private handAnchors: AnchorData | null = null
 
+  // Bartender NPC
+  private bartenderSprite: Phaser.GameObjects.Sprite | null = null
+  private bartenderAlive  = true
+
   private facing = 'down'
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
@@ -114,6 +121,7 @@ export class BarScene extends Phaser.Scene {
   private hintText!: Phaser.GameObjects.Text
   private controlsText!: Phaser.GameObjects.Text
   private swingBtn: Phaser.GameObjects.Text | null = null
+  private talkBtn:  Phaser.GameObjects.Text | null = null
 
   constructor() {
     super({ key: 'BarScene' })
@@ -131,6 +139,7 @@ export class BarScene extends Phaser.Scene {
     this.setupInput()
     this.setupCamera()
     this.setupHUD()
+    this.setupBattleEvents()
   }
 
   // ── Animations ────────────────────────────────────────────────────────────
@@ -229,19 +238,32 @@ export class BarScene extends Phaser.Scene {
   private spawnBartender() {
     const bx = ROOM_X + BARTENDER_TILE[0] * TILE + TILE / 2
     const by = BARTENDER_TILE[1] * TILE + TILE / 2
-    const bartender = this.add.sprite(bx, by, 'demon_bartender', 0)
-    bartender.setDepth(10 + by / ROOM_H)
-    bartender.play('demon-idle-down')
+    this.bartenderSprite = this.add.sprite(bx, by, 'demon_bartender', 0)
+    this.bartenderSprite.setDepth(10 + by / ROOM_H)
+    this.bartenderSprite.play('demon-idle-down')
 
-    // Subtle idle sway — bartender slowly turns left/right
+    // Idle glance left/right every few seconds
     this.time.addEvent({
-      delay: 3500,
-      loop: true,
+      delay: 3500, loop: true,
       callback: () => {
-        const anims = ['demon-idle-down', 'demon-idle-left', 'demon-idle-down', 'demon-idle-right']
-        const pick = anims[Math.floor(Math.random() * anims.length)]
-        bartender.play(pick)
+        if (!this.bartenderAlive) return
+        const pool = ['demon-idle-down', 'demon-idle-left', 'demon-idle-down', 'demon-idle-right']
+        this.bartenderSprite!.play(pool[Math.floor(Math.random() * pool.length)])
       },
+    })
+  }
+
+  // ── Battle event wiring ───────────────────────────────────────────────────
+  private setupBattleEvents() {
+    this.events.on('battle-end', (result: { won: boolean; playerHP: number }) => {
+      if (result.won) {
+        this.bartenderAlive = false
+        this.bartenderSprite?.setTint(0x330000).setAlpha(0.5)
+        this.bartenderSprite?.stop()
+        this.talkBtn?.setVisible(false)
+        this.hintText.setText('The demon is defeated.').setVisible(true)
+        this.time.delayedCall(2000, () => this.hintText.setVisible(false))
+      }
     })
   }
 
@@ -324,6 +346,16 @@ export class BarScene extends Phaser.Scene {
         .setScrollFactor(0).setDepth(100).setInteractive()
         .setVisible(false)
         .on('pointerdown', () => this.startAttack())
+
+      // TALK button — appears when near bartender
+      this.talkBtn = this.add.text(GAME_WIDTH - 72, GAME_HEIGHT - 216, 'TALK', {
+        fontSize: '13px', color: '#66ffcc',
+        backgroundColor: '#00334488',
+        padding: { x: 12, y: 8 }, align: 'center',
+      })
+        .setScrollFactor(0).setDepth(100).setInteractive()
+        .setVisible(false)
+        .on('pointerdown', () => this.tryTalkToBartender())
     }
   }
 
@@ -358,9 +390,14 @@ export class BarScene extends Phaser.Scene {
   update() {
     this.handleMovement()
     this.updateBatProximity()
+    this.updateBartenderProximity()
     this.updateHeldBat()
 
-    if (Phaser.Input.Keyboard.JustDown(this.keyE))     this.tryPickup()
+    if (Phaser.Input.Keyboard.JustDown(this.keyE)) {
+      // Each handler checks proximity internally; call both, safe to do so
+      this.tryPickup()
+      this.tryTalkToBartender()
+    }
     if (Phaser.Input.Keyboard.JustDown(this.keySpace)) this.startAttack()
 
     this.player.setDepth(10 + this.player.y / ROOM_H)
@@ -423,6 +460,50 @@ export class BarScene extends Phaser.Scene {
     } else {
       this.hintText.setVisible(false)
     }
+  }
+
+  // ── Bartender proximity hint ──────────────────────────────────────────────
+  private updateBartenderProximity() {
+    if (!this.bartenderAlive || !this.bartenderSprite) return
+    const dist = Phaser.Math.Distance.Between(
+      this.player.x, this.player.y,
+      this.bartenderSprite.x, this.bartenderSprite.y,
+    )
+    const near = dist < BARTEND_INTERACT_DIST
+    if (near && !this.hasBat) {
+      // Bat hint takes priority; skip if bat is still on the floor and we're close to it
+      return
+    }
+    if (near) {
+      this.hintText.setText(isMobile() ? 'Tap TALK to confront demon' : 'E — talk to the demon')
+      this.hintText.setVisible(true)
+      this.talkBtn?.setVisible(true)
+    } else {
+      this.talkBtn?.setVisible(false)
+      // Only hide hint if the bat hint isn't already showing it
+      if (this.hintText.text.includes('demon')) this.hintText.setVisible(false)
+    }
+  }
+
+  // ── Talk / start battle ───────────────────────────────────────────────────
+  private tryTalkToBartender() {
+    if (!this.bartenderAlive || !this.bartenderSprite) return
+    const dist = Phaser.Math.Distance.Between(
+      this.player.x, this.player.y,
+      this.bartenderSprite.x, this.bartenderSprite.y,
+    )
+    if (dist >= BARTEND_INTERACT_DIST) return
+
+    this.hintText.setVisible(false)
+    this.talkBtn?.setVisible(false)
+
+    // Launch battle scene as overlay; pause this scene
+    this.scene.launch('BattleScene', {
+      playerHP:    100,
+      playerMaxHP: 100,
+      hasWeapon:   this.hasBat,
+    })
+    this.scene.pause()
   }
 
   // ── Pickup ────────────────────────────────────────────────────────────────

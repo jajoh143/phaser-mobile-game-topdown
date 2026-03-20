@@ -5,6 +5,7 @@ import { WorldScene } from '@/scenes/WorldScene'
 import { UIScene } from '@/scenes/UIScene'
 import { WeaponDemoScene } from '@/scenes/WeaponDemoScene'
 import { BarScene } from '@/scenes/BarScene'
+import { BattleScene } from '@/scenes/BattleScene'
 import { GAME_WIDTH, GAME_HEIGHT } from '@/constants'
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -25,7 +26,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, PreloadScene, BarScene, WorldScene, UIScene, WeaponDemoScene],
+  scene: [BootScene, PreloadScene, BarScene, BattleScene, WorldScene, UIScene, WeaponDemoScene],
 }
 
 new Phaser.Game(config)
