@@ -24,6 +24,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('brick_wall',  'assets/sprites/brick_wall.png')
     this.load.image('wood_floor',  'assets/sprites/wood_floor.png')
     this.load.image('wooden_bar',  'assets/sprites/wooden_bar.png')
+    this.load.image('dance_floor', 'assets/sprites/dance_floor.png')
+
+    // ── Bar scene props / decorations ────────────────────────────────────
+    this.load.image('led_sign',    'assets/sprites/led_sign.png')
+    this.load.image('tom_poster',  'assets/sprites/tom_poster.png')
 
     // ── Bar scene props ───────────────────────────────────────────────────
     // alcohol_bottles.png: 128×32 sheet, 4 frames (whiskey/wine/gin/beer)
