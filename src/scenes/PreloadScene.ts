@@ -46,6 +46,9 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('weapon_bat', 'assets/sprites/weapon_bat.png', {
       frameWidth: 32, frameHeight: 32,
     })
+
+    // hand_anchors.json: per-animation, per-direction, per-frame weapon grip data
+    this.load.json('hand_anchors', 'assets/sprites/hand_anchors.json')
   }
 
   create() {

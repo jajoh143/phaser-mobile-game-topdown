@@ -59,33 +59,33 @@ const BARTENDER_TILE:  [number, number] = [5, 1]   // center of behind-bar row
 
 // ─── Spritesheet frame layout (128×640, 32×32 frames) ─────────────────────────
 // ANIMATIONS = [walk, jump, crouch, interact, slash] × DIRECTIONS = [down, left, right, up]
-// frame_number = (anim_index * 4 + dir_index) * 4 + frame_col
-//
 //  walk  rows  0-3  → frames   0-15
 //  slash rows 16-19 → frames  64-79
 
-// ─── Weapon-frame and hand-offset per facing direction ────────────────────────
-// weapon_bat.png frames: 0=East 1=South 2=West 3=North
-const DIR_BAT_FRAME: Record<string, number> = {
-  right: 0, down: 1, left: 2, up: 3,
-}
-const DIR_BAT_OFFSET: Record<string, { x: number; y: number }> = {
-  right: { x: 16, y:  2 },
-  down:  { x:  2, y: 16 },
-  left:  { x: -16, y:  2 },
-  up:    { x:  2, y: -16 },
+// ─── Anchor-based weapon placement ────────────────────────────────────────────
+// hand_anchors.json: { anim: { direction: [{x,y,angle,orient}, ...] } }
+// x, y = pixel position within the 32×32 frame (from top-left).
+// The bat sprite's GRIP END is set as the Phaser origin so setPosition() lands
+// the grip exactly on the hand anchor and setAngle() swings around that pivot.
+
+type AnchorFrame = { x: number; y: number; angle: number; orient: string }
+type AnchorData  = Record<string, Record<string, AnchorFrame[]>>
+
+// weapon_bat.png frame per orient
+const ORIENT_FRAME: Record<string, number> = { east: 0, south: 1, west: 2, north: 3 }
+
+// Bat sprite grip-end in normalised (0-1) origin space.
+// East frame (bat→right): barrel at x≈29, grip center at x≈9, y≈15
+//   → origin_x = 9/32 ≈ 0.28, origin_y = 15/32 ≈ 0.47
+// West is mirrored, South/North rotate the same offset 90°.
+const ORIENT_ORIGIN: Record<string, { ox: number; oy: number }> = {
+  east:  { ox: 0.28, oy: 0.47 },
+  west:  { ox: 0.72, oy: 0.47 },
+  south: { ox: 0.47, oy: 0.28 },
+  north: { ox: 0.47, oy: 0.72 },
 }
 
-// Swing rotation (radians) per facing direction
-const DIR_SWING_ROTATION: Record<string, number> = {
-  right:  1.2,
-  down:   1.2,
-  left:  -1.2,
-  up:    -1.2,
-}
-
-// Bat scale — the weapon_bat sprite is 32×32, same as the character.
-// Scale it down so it looks like a hand-held item, not a tile-sized prop.
+// Bat scale — weapon_bat frames are 32×32 (full tile). Scale down to hand-held.
 const BAT_HELD_SCALE = 0.55
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
@@ -99,8 +99,9 @@ export class BarScene extends Phaser.Scene {
   private batAlive = true
 
   private heldBat: Phaser.GameObjects.Sprite | null = null
-  private hasBat    = false
-  private attacking = false
+  private hasBat      = false
+  private attacking   = false
+  private handAnchors: AnchorData | null = null
 
   private facing = 'down'
 
@@ -120,6 +121,7 @@ export class BarScene extends Phaser.Scene {
 
   // ── create ────────────────────────────────────────────────────────────────
   create() {
+    this.handAnchors = this.cache.json.get('hand_anchors') as AnchorData
     this.createAnimations()
     this.buildMap()
     this.spawnPlayer()
@@ -256,7 +258,6 @@ export class BarScene extends Phaser.Scene {
     this.player.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {
       if (anim.key.startsWith('bar-slash-')) {
         this.attacking = false
-        if (this.heldBat) this.heldBat.rotation = 0
         this.player.play(`bar-idle-${this.facing}`)
       }
     })
@@ -470,24 +471,45 @@ export class BarScene extends Phaser.Scene {
     this.attacking = true
     this.player.setVelocity(0, 0)
     this.player.play(`bar-slash-${this.facing}`)
-
-    if (this.heldBat) {
-      this.tweens.add({
-        targets: this.heldBat,
-        rotation: DIR_SWING_ROTATION[this.facing],
-        duration: 180,
-        ease: 'Power2.easeIn',
-        yoyo: true,
-      })
-    }
+    // Bat position/angle is driven entirely by hand_anchors.json each frame —
+    // no manual tween needed; updateHeldBat() reads the slash anchor per frame.
   }
 
-  // ── Held bat follows player ───────────────────────────────────────────────
+  // ── Held bat — anchor-driven placement ───────────────────────────────────
+  // Reads hand_anchors.json for the current animation, direction, and frame.
+  // Anchor (x, y) is in 32×32 frame pixel space (from top-left of the sprite).
+  // We convert to world offset by subtracting the frame centre (16, 16), then
+  // set the bat's Phaser origin to the grip end so rotation pivots there.
   private updateHeldBat() {
-    if (!this.heldBat) return
-    const off = DIR_BAT_OFFSET[this.facing]
-    this.heldBat.setPosition(this.player.x + off.x, this.player.y + off.y)
-    this.heldBat.setFrame(DIR_BAT_FRAME[this.facing])
+    if (!this.heldBat || !this.handAnchors) return
+
+    const animKey = this.player.anims.currentAnim?.key ?? ''
+
+    // Map the current player animation to an anchor table entry.
+    // Idle animations use the walk frame-0 anchor (same hand position).
+    const animName = animKey.includes('slash') ? 'slash' : 'walk'
+
+    // Frame index 0-3 within the current animation cycle
+    const frameIdx = Number(this.player.anims.currentFrame?.textureFrame ?? 0) % 4
+
+    const anchor = this.handAnchors[animName]?.[this.facing]?.[frameIdx]
+    if (!anchor) return
+
+    // Convert frame-space anchor to world offset from the player's centre
+    // (player sprite has default origin 0.5, 0.5, so centre = pixel 16,16)
+    const wx = this.player.x + anchor.x - 16
+    const wy = this.player.y + anchor.y - 16
+
+    // Set bat origin to the grip end so position() lands the grip on the hand
+    // and setAngle() rotates the bat around that pivot point
+    const grip = ORIENT_ORIGIN[anchor.orient] ?? { ox: 0.5, oy: 0.5 }
+    this.heldBat.setOrigin(grip.ox, grip.oy)
+    this.heldBat.setPosition(wx, wy)
+    this.heldBat.setFrame(ORIENT_FRAME[anchor.orient] ?? 0)
+    this.heldBat.setAngle(anchor.angle)
+
+    // Depth: below player when facing down (barrel goes behind body),
+    // above when facing up or to the side (arm extends forward)
     this.heldBat.setDepth(
       this.facing === 'down'
         ? this.player.depth - 0.5
