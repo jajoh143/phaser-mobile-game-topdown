@@ -32,9 +32,13 @@ export class PreloadScene extends Phaser.Scene {
     })
 
     // ── Character & weapon ────────────────────────────────────────────────
-    // char_0.png: 128×128 sheet, 32×32 frames
-    // Rows: 0=down(0-3)  1=left(4-7)  2=right(8-11)  3=up(12-15)
+    // char_0.png: 128×640 sheet, 32×32 frames (5 animations × 4 directions × 4 frames)
     this.load.spritesheet('char_0', 'assets/sprites/char_0.png', {
+      frameWidth: 32, frameHeight: 32,
+    })
+
+    // demon_bartender.png: same layout as char_0.png
+    this.load.spritesheet('demon_bartender', 'assets/sprites/demon_bartender.png', {
       frameWidth: 32, frameHeight: 32,
     })
 
