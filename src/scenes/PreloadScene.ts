@@ -20,13 +20,31 @@ export class PreloadScene extends Phaser.Scene {
       bar.fillRect(width / 2 - 118, height / 2 - 8, 236 * value, 16)
     })
 
-    // If you add real assets later, load them here:
-    // this.load.image('tileset', 'assets/tileset.png')
-    // this.load.tilemapTiledJSON('map', 'assets/map.json')
-    // this.load.atlas('player', 'assets/player.png', 'assets/player.json')
+    // ── Bar scene tiles ───────────────────────────────────────────────────
+    this.load.image('brick_wall',  'assets/sprites/brick_wall.png')
+    this.load.image('wood_floor',  'assets/sprites/wood_floor.png')
+    this.load.image('wooden_bar',  'assets/sprites/wooden_bar.png')
+
+    // ── Bar scene props ───────────────────────────────────────────────────
+    // alcohol_bottles.png: 128×32 sheet, 4 frames (whiskey/wine/gin/beer)
+    this.load.spritesheet('alcohol_bottles', 'assets/sprites/alcohol_bottles.png', {
+      frameWidth: 32, frameHeight: 32,
+    })
+
+    // ── Character & weapon ────────────────────────────────────────────────
+    // char_0.png: 128×128 sheet, 32×32 frames
+    // Rows: 0=down(0-3)  1=left(4-7)  2=right(8-11)  3=up(12-15)
+    this.load.spritesheet('char_0', 'assets/sprites/char_0.png', {
+      frameWidth: 32, frameHeight: 32,
+    })
+
+    // weapon_bat.png: 128×32 sheet, 4 frames (E/S/W/N orientations)
+    this.load.spritesheet('weapon_bat', 'assets/sprites/weapon_bat.png', {
+      frameWidth: 32, frameHeight: 32,
+    })
   }
 
   create() {
-    this.scene.start('WeaponDemoScene')
+    this.scene.start('BarScene')
   }
 }
