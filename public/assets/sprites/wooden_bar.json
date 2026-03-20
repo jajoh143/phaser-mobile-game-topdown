@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "image": "wooden_bar.png",
+    "size": {
+      "w": 32,
+      "h": 64
+    },
+    "scale": "1"
+  },
+  "frames": {
+    "wooden_bar": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 64
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 64
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 64
+      }
+    }
+  },
+  "animations": {
+    "wooden_bar": [
+      "wooden_bar"
+    ]
+  }
+}

@@ -32,9 +32,13 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-import generate_character as gc
-import generate_weapon    as gw
-import generate_equipped  as ge
+import generate_character      as gc
+import generate_weapon         as gw
+import generate_equipped       as ge
+import generate_brick_wall     as gbw
+import generate_wood_floor     as gwf
+import generate_wooden_bar     as gbar
+import generate_alcohol_bottles as gab
 
 # Output directory — resolves to  <repo-root>/public/assets/sprites/
 _REPO_ROOT  = os.path.abspath(os.path.join(_SCRIPT_DIR, "..", ".."))
@@ -79,6 +83,30 @@ def export_anchors() -> str:
     return out_path
 
 
+def export_bar_assets() -> None:
+    """Generate and export all bar scene environment tiles/sprites."""
+    import json, shutil
+
+    assets = [
+        ("brick_wall",      gbw.generate,  gbw.build_atlas),
+        ("wood_floor",      gwf.generate,  gwf.build_atlas),
+        ("wooden_bar",      gbar.generate, gbar.build_atlas),
+        ("alcohol_bottles", gab.generate,  gab.build_atlas),
+    ]
+    for name, gen_fn, atlas_fn in assets:
+        img = gen_fn()
+        png_path  = os.path.join(OUTPUT_DIR, f"{name}.png")
+        json_path = os.path.join(OUTPUT_DIR, f"{name}.json")
+        img.save(png_path)
+        with open(json_path, "w") as f:
+            try:
+                atlas = atlas_fn(f"{name}.png")
+            except TypeError:
+                atlas = atlas_fn()
+            json.dump(atlas, f, indent=2)
+        print(f"  bar   → {png_path}  ({img.width}×{img.height})")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Export character/weapon sprites + anchor JSON for Phaser 3"
@@ -89,10 +117,19 @@ def main():
                         help="Export only this weapon (e.g. sword, pistol)")
     parser.add_argument("--no-anchors", action="store_true",
                         help="Skip exporting hand_anchors.json")
+    parser.add_argument("--bar", action="store_true",
+                        help="Export only bar scene assets (brick_wall, wood_floor, wooden_bar, alcohol_bottles)")
     args = parser.parse_args()
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"\nExporting to: {OUTPUT_DIR}\n")
+
+    # Bar scene assets (quick export shortcut)
+    if args.bar:
+        print("Exporting bar scene assets...")
+        export_bar_assets()
+        print("\nDone.")
+        return
 
     # Characters
     if args.preset is not None:
@@ -119,6 +156,10 @@ def main():
     if not args.no_anchors:
         print("Exporting hand anchors...")
         export_anchors()
+
+    # Bar scene assets
+    print("\nExporting bar scene assets...")
+    export_bar_assets()
 
     print("\nDone.")
 
