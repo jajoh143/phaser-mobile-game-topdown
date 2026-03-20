@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Studio</title>
+<style>
+/* ── reset & theme ── */
+:root {
+  --bg:        #0d0d18;
+  --surface:   #181828;
+  --surface2:  #20203a;
+  --surface3:  #292945;
+  --border:    #2e2e52;
+  --border2:   #3a3a60;
+  --accent:    #5566ee;
+  --accent-hl: #7788ff;
+  --gold:      #f0b83c;
+  --gold-dim:  #9a7420;
+  --green:     #3dba72;
+  --green-dim: #1e6b3e;
+  --red:       #e05555;
+  --text:      #dde0f5;
+  --text-dim:  #7777aa;
+  --text-faint:#444470;
+  --radius:    5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Courier New',Courier,monospace;
+  font-size:13px;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── scrollbars ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── header ── */
+header{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:.5rem 1.2rem;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  flex-shrink:0;
+}
+header h1{font-size:.95rem;color:var(--gold);letter-spacing:.08em;white-space:nowrap}
+.header-sub{color:var(--text-dim);font-size:.7rem}
+.header-spacer{flex:1}
+.header-tag{
+  font-size:.65rem;color:var(--text-faint);
+  border:1px solid var(--border);
+  padding:.15rem .4rem;border-radius:3px;
+}
+
+/* ── main 3-column layout ── */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── sidebars ── */
+.sidebar{
+  width:210px;min-width:210px;
+  background:var(--surface);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  padding:.7rem;
+  gap:.8rem;
+  flex-shrink:0;
+}
+.sidebar-r{border-left:1px solid var(--border)}
+.sidebar-l{border-right:1px solid var(--border)}
+
+/* ── section headers ── */
+.section-hd{
+  font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--text-faint);
+  padding-bottom:.3rem;
+  border-bottom:1px solid var(--border);
+  margin-bottom:.35rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.section-hd button{
+  font-size:.6rem;background:none;border:none;
+  color:var(--text-faint);cursor:pointer;padding:0;
+  letter-spacing:.06em;text-transform:uppercase;
+  font-family:inherit;
+}
+.section-hd button:hover{color:var(--text-dim)}
+
+/* ── preset cards ── */
+.preset-list{display:flex;flex-direction:column;gap:.22rem}
+.preset-card{
+  display:flex;align-items:center;gap:.4rem;
+  padding:.3rem .4rem;
+  border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;
+  transition:border-color .12s,background .12s;
+}
+.preset-card:hover{background:var(--surface2);border-color:var(--border2)}
+.preset-card.sel{background:var(--surface2);border-color:var(--accent)}
+.chips{display:flex;gap:2px;flex-shrink:0}
+.chip{
+  width:9px;height:9px;border-radius:2px;
+  border:1px solid rgba(255,255,255,.15);flex-shrink:0;
+}
+.preset-label{
+  font-size:.7rem;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;flex:1;
+}
+
+/* ── form controls ── */
+.field{display:flex;flex-direction:column;gap:.3rem}
+.field label{font-size:.65rem;color:var(--text-dim)}
+select,input[type=range]{font-family:inherit}
+select{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text);
+  padding:.3rem .45rem;border-radius:var(--radius);
+  font-size:.75rem;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23777'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .5rem center;
+  padding-right:1.4rem;
+}
+select:focus{outline:none;border-color:var(--accent)}
+
+/* ── color customization panel ── */
+.color-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.3rem .4rem;
+}
+.color-row{
+  display:flex;flex-direction:column;gap:.2rem;
+}
+.color-row label{
+  font-size:.6rem;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.color-wrap{
+  display:flex;align-items:center;gap:.3rem;
+}
+input[type=color]{
+  width:28px;height:22px;
+  padding:1px 2px;
+  border:1px solid var(--border);border-radius:3px;
+  background:var(--surface2);cursor:pointer;
+  flex-shrink:0;
+}
+input[type=color]::-webkit-color-swatch-wrapper{padding:1px}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:2px}
+.hex-val{
+  font-size:.62rem;color:var(--text-faint);
+  letter-spacing:.04em;min-width:44px;
+  cursor:pointer;
+}
+.hex-val:hover{color:var(--text-dim)}
+
+/* ── category tabs (weapon sidebar) ── */
+.cat-tabs{
+  display:flex;gap:2px;margin-bottom:.35rem;
+}
+.cat-btn{
+  flex:1;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  padding:.25rem .2rem;
+  font-family:inherit;font-size:.62rem;
+  cursor:pointer;border-radius:3px;
+  transition:background .1s,color .1s,border-color .1s;
+  text-align:center;
+}
+.cat-btn:hover{background:var(--surface3);color:var(--text)}
+.cat-btn.sel-fantasy{border-color:var(--gold);color:var(--gold);background:var(--surface3)}
+.cat-btn.sel-modern {border-color:var(--green);color:var(--green);background:var(--surface3)}
+.cat-btn.sel-all    {border-color:var(--accent);color:var(--accent-hl);background:var(--surface3)}
+
+/* ── weapon grid ── */
+.weapon-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:.28rem;
+}
+.weapon-card{
+  display:flex;flex-direction:column;align-items:center;
+  padding:.35rem .2rem .28rem;
+  border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;background:var(--surface2);
+  transition:border-color .12s,background .12s;
+  gap:.22rem;text-align:center;
+  position:relative;
+}
+.weapon-card:hover{border-color:var(--border2);background:var(--surface3)}
+.weapon-card.sel{border-color:var(--gold);background:var(--surface3)}
+.weapon-card.hidden-card{display:none}
+.weapon-icon{
+  width:32px;height:32px;
+  image-rendering:pixelated;display:block;
+}
+.weapon-name{font-size:.58rem;color:var(--text-dim)}
+.weapon-card.sel .weapon-name{color:var(--gold)}
+.weapon-cat-dot{
+  position:absolute;top:3px;right:4px;
+  width:5px;height:5px;border-radius:50%;
+}
+.weapon-cat-dot.fantasy{background:var(--gold-dim)}
+.weapon-cat-dot.modern {background:var(--green-dim)}
+
+/* ── center preview ── */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── tabs ── */
+.tabs{
+  display:flex;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tab{
+  padding:.48rem 1.1rem;cursor:pointer;font-size:.75rem;
+  color:var(--text-dim);border-bottom:2px solid transparent;
+  transition:color .12s,border-color .12s;user-select:none;
+}
+.tab:hover{color:var(--text)}
+.tab.sel{color:var(--accent-hl);border-bottom-color:var(--accent-hl)}
+
+/* ── canvas stage ── */
+.stage{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);position:relative;overflow:hidden;
+}
+.stage-inner{
+  display:flex;flex-direction:column;align-items:center;gap:.9rem;
+}
+.stage canvas{
+  image-rendering:pixelated;
+  border:1px solid var(--border2);border-radius:3px;
+  background:repeating-conic-gradient(var(--surface2) 0% 25%,var(--bg) 0% 50%) 0 0/16px 16px;
+}
+.orient-row{display:flex;gap:1.4rem;align-items:flex-end}
+.orient-cell{display:flex;flex-direction:column;align-items:center;gap:.35rem}
+.orient-cell canvas{
+  image-rendering:pixelated;
+  border:1px solid var(--border2);
+  background:repeating-conic-gradient(var(--surface2) 0% 25%,var(--bg) 0% 50%) 0 0/16px 16px;
+}
+.orient-label{font-size:.65rem;color:var(--text-dim)}
+.stage-label{font-size:.65rem;color:var(--text-faint)}
+
+/* ── loading overlay ── */
+.loading{
+  position:absolute;inset:0;
+  background:rgba(13,13,24,.75);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:.6rem;
+  font-size:.8rem;color:var(--text-dim);
+  z-index:10;transition:opacity .2s;
+}
+.spinner{
+  width:24px;height:24px;
+  border:2px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── controls bar ── */
+.controls{
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .8rem;display:flex;flex-direction:column;gap:.4rem;flex-shrink:0;
+}
+.ctrl-row{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.ctrl-label{
+  font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-faint);min-width:36px;flex-shrink:0;
+}
+.btn-group{display:flex;gap:2px;flex-wrap:wrap}
+.btn{
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text-dim);padding:.22rem .55rem;
+  cursor:pointer;font-family:inherit;font-size:.72rem;border-radius:3px;
+  transition:background .1s,color .1s,border-color .1s;user-select:none;
+}
+.btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.btn.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.fps-row{display:flex;align-items:center;gap:.4rem}
+input[type=range]{accent-color:var(--accent);width:70px;cursor:pointer;vertical-align:middle}
+.fps-val{font-size:.7rem;color:var(--text-dim);min-width:18px}
+.ctrl-spacer{flex:1}
+.btn-export{
+  background:transparent;border:1px solid var(--gold-dim);color:var(--gold);
+  padding:.22rem .65rem;cursor:pointer;font-family:inherit;font-size:.72rem;
+  border-radius:3px;transition:background .12s,border-color .12s;white-space:nowrap;
+}
+.btn-export:hover{background:rgba(240,184,60,.1);border-color:var(--gold)}
+.btn-export:active{background:rgba(240,184,60,.2)}
+.zoom-badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  font-size:.65rem;color:var(--text-faint);
+}
+.zoom-badge select{width:auto;padding:.2rem .9rem .2rem .3rem;font-size:.65rem}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <h1>Character Studio</h1>
+  <span class="header-sub">32 × 32 pixel sprite generator</span>
+  <div class="header-spacer"></div>
+  <span class="header-tag">Chicago · Reality &amp; Fantasy</span>
+  <span class="header-tag">walk · jump · crouch · interact · slash</span>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+  <!-- ─── LEFT SIDEBAR ─── -->
+  <aside class="sidebar sidebar-l">
+
+    <!-- Presets -->
+    <div>
+      <div class="section-hd">Preset</div>
+      <div class="preset-list" id="preset-list">
+        {% for p in presets %}
+        <div class="preset-card{% if loop.index0==0 %} sel{% endif %}"
+             data-idx="{{ p.idx }}"
+             onclick="selectPreset({{ p.idx }},this)">
+          <div class="chips">
+            <div class="chip" style="background:rgb({{p.skin[0]}},{{p.skin[1]}},{{p.skin[2]}})" title="skin"></div>
+            <div class="chip" style="background:rgb({{p.hair[0]}},{{p.hair[1]}},{{p.hair[2]}})" title="hair"></div>
+            <div class="chip" style="background:rgb({{p.shirt[0]}},{{p.shirt[1]}},{{p.shirt[2]}})" title="shirt"></div>
+            <div class="chip" style="background:rgb({{p.pants[0]}},{{p.pants[1]}},{{p.pants[2]}})" title="pants"></div>
+          </div>
+          <span class="preset-label" title="{{ p.name }}">{{ p.name }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Hair style -->
+    <div class="field">
+      <label>Hair Style</label>
+      <select id="hair-sel" onchange="onSettingsChange()">
+        {% for h in hair_styles %}
+        <option value="{{ h }}">{{ h }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Color customization -->
+    <div>
+      <div class="section-hd">
+        Colors
+        <button onclick="resetColors()" title="Reset to preset defaults">↺ reset</button>
+      </div>
+      <div class="color-grid">
+        <div class="color-row">
+          <label>Skin</label>
+          <div class="color-wrap">
+            <input type="color" id="c-skin"  oninput="onColorInput('skin',this)"  onchange="onColorChange()">
+            <span class="hex-val" id="hv-skin"  onclick="copyHex('c-skin')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Hair</label>
+          <div class="color-wrap">
+            <input type="color" id="c-hair"  oninput="onColorInput('hair',this)"  onchange="onColorChange()">
+            <span class="hex-val" id="hv-hair"  onclick="copyHex('c-hair')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Shirt</label>
+          <div class="color-wrap">
+            <input type="color" id="c-shirt" oninput="onColorInput('shirt',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-shirt" onclick="copyHex('c-shirt')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Pants</label>
+          <div class="color-wrap">
+            <input type="color" id="c-pants" oninput="onColorInput('pants',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-pants" onclick="copyHex('c-pants')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Shoes</label>
+          <div class="color-wrap">
+            <input type="color" id="c-shoes" oninput="onColorInput('shoes',this)" onchange="onColorChange()">
+            <span class="hex-val" id="hv-shoes" onclick="copyHex('c-shoes')">#------</span>
+          </div>
+        </div>
+        <div class="color-row">
+          <label>Eyes</label>
+          <div class="color-wrap">
+            <input type="color" id="c-eye"   oninput="onColorInput('eye',this)"   onchange="onColorChange()">
+            <span class="hex-val" id="hv-eye"   onclick="copyHex('c-eye')">#------</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ─── CENTER: preview ─── -->
+  <div class="center">
+
+    <div class="tabs">
+      <div class="tab sel" data-tab="character" onclick="switchTab('character',this)">Character</div>
+      <div class="tab"     data-tab="weapon"    onclick="switchTab('weapon',this)">Weapon</div>
+      <div class="tab"     data-tab="equipped"  onclick="switchTab('equipped',this)">Equipped</div>
+    </div>
+
+    <div class="stage" id="stage">
+
+      <!-- Character tab -->
+      <div id="tab-character" class="stage-inner">
+        <canvas id="char-canvas" width="{{ frame_w * 6 }}" height="{{ frame_h * 6 }}"></canvas>
+        <div class="zoom-badge">
+          zoom
+          <select id="char-zoom" onchange="onZoomChange()">
+            <option value="4">4×</option>
+            <option value="6" selected>6×</option>
+            <option value="8">8×</option>
+          </select>
+          &nbsp;·&nbsp; {{ frame_w }}×{{ frame_h }} native
+        </div>
+      </div>
+
+      <!-- Weapon tab -->
+      <div id="tab-weapon" class="stage-inner hidden">
+        <div class="orient-row" id="orient-row"></div>
+        <span class="stage-label">4 orientations (E · S · W · N) at 4× zoom</span>
+      </div>
+
+      <!-- Equipped tab -->
+      <div id="tab-equipped" class="stage-inner hidden">
+        <canvas id="eq-canvas" width="{{ frame_w * 6 }}" height="{{ frame_h * 6 }}"></canvas>
+        <div class="zoom-badge">
+          zoom
+          <select id="eq-zoom" onchange="onZoomChange()">
+            <option value="4">4×</option>
+            <option value="6" selected>6×</option>
+            <option value="8">8×</option>
+          </select>
+          &nbsp;·&nbsp; character + weapon overlay
+        </div>
+      </div>
+
+      <div class="loading hidden" id="loading">
+        <div class="spinner"></div>
+        <span id="loading-msg">Generating…</span>
+      </div>
+    </div>
+
+    <!-- Controls bar -->
+    <div class="controls">
+      <div class="ctrl-row" id="anim-row">
+        <span class="ctrl-label">Anim</span>
+        <div class="btn-group" id="anim-btns">
+          {% for a in animations %}
+          <button class="btn{% if loop.index0==0 %} sel{% endif %}"
+                  onclick="selectAnim('{{a}}',this)">{{a}}</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Dir</span>
+        <div class="btn-group" id="dir-btns">
+          {% for d in directions %}
+          <button class="btn{% if loop.index0==0 %} sel{% endif %}"
+                  onclick="selectDir('{{d}}',this)">{{d}}</button>
+          {% endfor %}
+        </div>
+        <div class="fps-row" style="margin-left:.6rem">
+          <span class="ctrl-label" style="min-width:auto">fps</span>
+          <input type="range" id="fps-slider" min="1" max="24" value="6"
+                 oninput="setFps(+this.value)">
+          <span class="fps-val" id="fps-val">6</span>
+        </div>
+        <div class="ctrl-spacer"></div>
+        <button class="btn-export" onclick="exportSheet('character')">↓ Character</button>
+        <button class="btn-export" onclick="exportSheet('weapon')">↓ Weapon</button>
+        <button class="btn-export" onclick="exportSheet('equipped')">↓ Equipped</button>
+      </div>
+    </div>
+
+  </div><!-- /center -->
+
+  <!-- ─── RIGHT SIDEBAR: weapons ─── -->
+  <aside class="sidebar sidebar-r">
+
+    <div>
+      <div class="section-hd">Weapon</div>
+
+      <!-- Category filter -->
+      <div class="cat-tabs">
+        <button class="cat-btn sel-all"     onclick="filterWeapons('all',this)">All</button>
+        <button class="cat-btn"             onclick="filterWeapons('fantasy',this)">⚔ Fantasy</button>
+        <button class="cat-btn"             onclick="filterWeapons('modern',this)">⚡ Modern</button>
+      </div>
+
+      <div class="weapon-grid" id="weapon-grid">
+        {% for w in weapons_meta %}
+        <div class="weapon-card{% if loop.index0==0 %} sel{% endif %}"
+             data-weapon="{{ w.name }}"
+             data-category="{{ w.category }}"
+             onclick="selectWeapon('{{w.name}}',this)">
+          <span class="weapon-cat-dot {{ w.category }}"></span>
+          <canvas class="weapon-icon" id="wicon-{{w.name}}" width="32" height="32"
+                  title="{{ w.name }}"></canvas>
+          <span class="weapon-name">{{ w.name }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </aside>
+
+</div><!-- /main -->
+
+<!-- ═══════════ SCRIPT ═══════════ -->
+<script>
+/* ── server-injected constants ── */
+const ANIMATIONS   = {{ animations    | tojson }};
+const DIRECTIONS   = {{ directions    | tojson }};
+const PRESETS_DATA = {{ presets       | tojson }};
+const WEAPONS      = {{ weapons       | tojson }};
+const FPD          = {{ frames_per_dir }};
+const FW           = {{ frame_w }};
+const FH           = {{ frame_h }};
+
+/* ── state ── */
+let preset    = 0;
+let hair      = document.getElementById('hair-sel').value;
+let weapon    = WEAPONS[0];
+let anim      = ANIMATIONS[0];
+let dir       = DIRECTIONS[0];
+let tab       = 'character';
+let fps       = 6;
+let zoom      = 6;
+let frameIdx  = 0;
+let animTimer = null;
+
+let charImg = null;
+let eqImg   = null;
+let wpnImg  = null;
+
+/* ── color helpers ── */
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function syncPickersToPreset(idx) {
+  const p = PRESETS_DATA[idx];
+  const slots = [
+    ['c-skin',  'hv-skin',  p.skin],
+    ['c-hair',  'hv-hair',  p.hair],
+    ['c-shirt', 'hv-shirt', p.shirt],
+    ['c-pants', 'hv-pants', p.pants],
+    ['c-shoes', 'hv-shoes', p.shoes],
+    ['c-eye',   'hv-eye',   p.eye],
+  ];
+  slots.forEach(([id, hvId, rgb]) => {
+    const hex = rgbToHex(...rgb);
+    document.getElementById(id).value = hex;
+    document.getElementById(hvId).textContent = hex;
+  });
+}
+
+function colorParams() {
+  return [
+    'skin_hex='  + document.getElementById('c-skin').value.slice(1),
+    'hair_hex='  + document.getElementById('c-hair').value.slice(1),
+    'shirt_hex=' + document.getElementById('c-shirt').value.slice(1),
+    'pants_hex=' + document.getElementById('c-pants').value.slice(1),
+    'shoes_hex=' + document.getElementById('c-shoes').value.slice(1),
+    'eye_hex='   + document.getElementById('c-eye').value.slice(1),
+  ].join('&');
+}
+
+function onColorInput(slot, el) {
+  document.getElementById('hv-' + slot).textContent = el.value;
+}
+
+function onColorChange() {
+  debouncedRefresh();
+}
+
+function resetColors() {
+  syncPickersToPreset(preset);
+  debouncedRefresh();
+}
+
+function copyHex(id) {
+  const val = document.getElementById(id).value;
+  navigator.clipboard?.writeText(val).catch(() => {});
+}
+
+/* ── weapon category filter ── */
+let activeCategory = 'all';
+
+function filterWeapons(cat, el) {
+  activeCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = 'cat-btn';
+  });
+  el.classList.add('sel-' + cat);
+
+  document.querySelectorAll('.weapon-card').forEach(card => {
+    const cardCat = card.dataset.category;
+    card.classList.toggle('hidden-card', cat !== 'all' && cardCat !== cat);
+  });
+}
+
+/* ── canvas helpers ── */
+function getRow(a, d) {
+  return ANIMATIONS.indexOf(a) * DIRECTIONS.length + DIRECTIONS.indexOf(d);
+}
+
+function drawFrame(canvas, img, a, d, f, z) {
+  if (!img || !canvas) return;
+  const scale = z || zoom;
+  canvas.width  = FW * scale;
+  canvas.height = FH * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const sq = 8;
+  for (let y = 0; y < canvas.height; y += sq)
+    for (let x = 0; x < canvas.width; x += sq) {
+      ctx.fillStyle = ((x/sq + y/sq) % 2 === 0) ? '#181828' : '#0d0d18';
+      ctx.fillRect(x, y, sq, sq);
+    }
+  const row = getRow(a, d);
+  ctx.drawImage(img, f * FW, row * FH, FW, FH, 0, 0, FW * scale, FH * scale);
+}
+
+function showLoading(visible, msg) {
+  const el = document.getElementById('loading');
+  el.classList.toggle('hidden', !visible);
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+}
+
+function fetchImg(url) {
+  return fetch(url)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = 'data:image/png;base64,' + d.image;
+    }));
+}
+
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+/* ── animation loop ── */
+function tick() {
+  if (tab === 'character' && charImg)
+    drawFrame(document.getElementById('char-canvas'), charImg, anim, dir, frameIdx);
+  else if (tab === 'equipped' && eqImg)
+    drawFrame(document.getElementById('eq-canvas'), eqImg, anim, dir, frameIdx);
+  frameIdx = (frameIdx + 1) % FPD;
+}
+
+function startLoop() {
+  if (animTimer) clearInterval(animTimer);
+  frameIdx = 0;
+  animTimer = setInterval(tick, 1000 / fps);
+}
+
+/* ── refresh functions ── */
+function refreshChar() {
+  showLoading(true, 'Generating character…');
+  const cp = colorParams();
+  return fetchImg(`/api/character?preset=${preset}&hair=${hair}&${cp}`)
+    .then(img => { charImg = img; if (tab === 'character') tick(); })
+    .finally(() => showLoading(false));
+}
+
+function refreshWeapon() {
+  showLoading(true, 'Generating weapon…');
+  return fetchImg(`/api/weapon?weapon=${weapon}`)
+    .then(img => {
+      wpnImg = img;
+      renderWeaponIcon(weapon, img);
+      if (tab === 'weapon') renderOrients(img);
+    })
+    .finally(() => showLoading(false));
+}
+
+function refreshEquipped() {
+  showLoading(true, 'Generating equipped…');
+  eqImg = null;
+  const cp = colorParams();
+  return fetchImg(`/api/equipped?preset=${preset}&hair=${hair}&weapon=${weapon}&${cp}`)
+    .then(img => { eqImg = img; if (tab === 'equipped') tick(); })
+    .finally(() => showLoading(false));
+}
+
+/* ── weapon icon loading ── */
+function loadAllWeaponIcons() {
+  WEAPONS.forEach(w => {
+    fetchImg(`/api/weapon?weapon=${w}`).then(img => {
+      renderWeaponIcon(w, img);
+    }).catch(() => {});
+  });
+}
+
+function renderWeaponIcon(w, img) {
+  const cv = document.getElementById('wicon-' + w);
+  if (!cv) return;
+  cv.width = cv.height = 32;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, FW, FH, 0, 0, 32, 32);
+}
+
+/* ── weapon tab: 4-orientation grid ── */
+const ORIENTS = ['east','south','west','north'];
+const ORIENT_ARROWS = {east:'→', south:'↓', west:'←', north:'↑'};
+
+function renderOrients(img) {
+  const row = document.getElementById('orient-row');
+  row.innerHTML = '';
+  const SZ = 4;
+  ORIENTS.forEach((o, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'orient-cell';
+    const cv = document.createElement('canvas');
+    cv.width = FW * SZ; cv.height = FH * SZ;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const sq = 8;
+    for (let y = 0; y < cv.height; y += sq)
+      for (let x = 0; x < cv.width; x += sq) {
+        ctx.fillStyle = ((x/sq + y/sq) % 2 === 0) ? '#181828' : '#0d0d18';
+        ctx.fillRect(x, y, sq, sq);
+      }
+    ctx.drawImage(img, i * FW, 0, FW, FH, 0, 0, FW * SZ, FH * SZ);
+    const lbl = document.createElement('div');
+    lbl.className = 'orient-label';
+    lbl.textContent = `${ORIENT_ARROWS[o]} ${o}`;
+    cell.appendChild(cv); cell.appendChild(lbl);
+    row.appendChild(cell);
+  });
+}
+
+/* ── event handlers ── */
+function selectPreset(idx, el) {
+  preset = idx;
+  hair = PRESETS_DATA[idx].default_hair;
+  document.getElementById('hair-sel').value = hair;
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  syncPickersToPreset(idx);
+  debouncedRefresh();
+}
+
+function selectWeapon(w, el) {
+  weapon = w;
+  document.querySelectorAll('.weapon-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  debouncedRefresh();
+}
+
+function selectAnim(a, el) {
+  anim = a; frameIdx = 0;
+  document.querySelectorAll('#anim-btns .btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function selectDir(d, el) {
+  dir = d; frameIdx = 0;
+  document.querySelectorAll('#dir-btns .btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function switchTab(t, el) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel');
+  ['character','weapon','equipped'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('hidden', id !== t);
+  });
+  document.getElementById('anim-row').classList.toggle('hidden', t === 'weapon');
+  if (t === 'weapon' && wpnImg) renderOrients(wpnImg);
+  if (t === 'equipped') { if (!eqImg) refreshEquipped(); else tick(); }
+  if (t === 'character' && charImg) tick();
+}
+
+function onSettingsChange() {
+  hair = document.getElementById('hair-sel').value;
+  debouncedRefresh();
+}
+
+function onZoomChange() {
+  zoom = +(document.getElementById(
+    tab === 'equipped' ? 'eq-zoom' : 'char-zoom'
+  ).value);
+  document.getElementById('char-zoom').value = zoom;
+  document.getElementById('eq-zoom').value   = zoom;
+}
+
+function setFps(v) {
+  fps = v;
+  document.getElementById('fps-val').textContent = v;
+  startLoop();
+}
+
+const debouncedRefresh = debounce(() => {
+  const jobs = [refreshChar(), refreshWeapon()];
+  if (tab === 'equipped') jobs.push(refreshEquipped());
+  else eqImg = null;
+}, 220);
+
+/* ── export ── */
+function exportSheet(kind) {
+  const cp  = colorParams();
+  const url = `/api/export?kind=${kind}&preset=${preset}&hair=${hair}&weapon=${weapon}&${cp}`;
+  const a   = document.createElement('a');
+  a.href    = url;
+  a.click();
+}
+
+/* ── init ── */
+window.addEventListener('load', () => {
+  syncPickersToPreset(0);
+  loadAllWeaponIcons();
+  Promise.all([refreshChar(), refreshWeapon()]).then(() => startLoop());
+});
+</script>
+</body>
+</html>

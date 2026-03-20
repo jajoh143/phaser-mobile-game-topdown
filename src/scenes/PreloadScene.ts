@@ -35,7 +35,6 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('WorldScene')
-    this.scene.start('UIScene')
+    this.scene.start('WeaponDemoScene')
   }
 }

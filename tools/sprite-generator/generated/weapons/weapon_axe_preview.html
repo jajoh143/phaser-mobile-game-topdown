@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Weapon: axe</title>
+<style>
+  body { background:#1a1a1a; color:#eee; font-family:monospace; padding:2rem; }
+  h1 { color:#adf; }
+  .frames { display:flex; gap:2rem; flex-wrap:wrap; margin-top:1rem; }
+  .frame-wrap { text-align:center; }
+  canvas { display:block; border:1px solid #444; image-rendering:pixelated; }
+  p.lbl { margin:0.3rem 0 0; font-size:0.8rem; color:#aaa; }
+</style>
+</head><body>
+<h1>Weapon: axe</h1>
+<p>128x32px spritesheet | 4 orientations × 32px</p>
+<div class="frames" id="frames"></div>
+<img id="src" src="weapon_axe.png" style="display:none">
+<script>
+const SCALE = 6, FW = 32, FH = 32;
+const ORIENTATIONS = ["east", "south", "west", "north"];
+const img = document.getElementById("src");
+img.onload = () => {
+  const c = document.getElementById("frames");
+  ORIENTATIONS.forEach((o, i) => {
+    const w = document.createElement("div"); w.className = "frame-wrap";
+    const cv = document.createElement("canvas");
+    cv.width = FW*SCALE; cv.height = FH*SCALE;
+    const ctx = cv.getContext("2d"); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, i*FW, 0, FW, FH, 0, 0, FW*SCALE, FH*SCALE);
+    const lbl = document.createElement("p"); lbl.className = "lbl";
+    lbl.textContent = o; w.appendChild(cv); w.appendChild(lbl); c.appendChild(w);
+  });
+};
+if (img.complete) img.onload();
+</script>
+</body></html>

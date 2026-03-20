@@ -7,7 +7,15 @@ Generates 32x32 spritesheets with SNES-inspired chibi proportions:
     forehead highlight for 3/4 top-down depth
   - Shoulder step-out (14px) tapering to waist (10px) with belt-line detail
   - 2px leg gap for clear readability in front/back views
-  - Thick 3px-wide arms hanging from shoulder pivots
+  - Arms: shoulder-pivot overlay system with human-like shading and joints:
+      * Front/back view: 3px with inner arm shadow (body-side pixel = skin_shade
+        for tube depth) + 1px elbow bump at joint row + shaded forearm
+      * Side view: 4px wide with back-face shadow (skin_shade + outline) giving
+        a round tube cross-section visible in profile
+      * Walk cycle: 4 fully distinct arm poses per cycle — mid_fwd/peak swing_fwd/
+        mid_back/peak swing_back — no repeated neutral frames
+      * Side walk: front arm swings full arc; back arm peeks from behind body
+        using peek poses (skin_shade + outline) for bilateral depth
   - Detailed hair with 3-tone shading (highlight, base, shade)
   - Clothing with shirt/pants/shoes distinction and belt-line detail
   - Hue-shifted shadows (cool-shifted) for depth and richness
@@ -39,7 +47,7 @@ TILE_SIZE = 32  # world grid is 32x32; sprites render at 1x
 
 DIRECTIONS = ["down", "left", "right", "up"]
 FRAMES_PER_DIR = 4
-ANIMATIONS = ["walk", "jump", "crouch", "interact"]
+ANIMATIONS = ["walk", "jump", "crouch", "interact", "slash"]
 
 # ---------------------------------------------------------------------------
 # COLOR PALETTES
@@ -262,6 +270,23 @@ def _derive_palette(preset: dict) -> dict:
         max(sdg - 40, 0),
         max(sdb - 30, 0),
         sa,
+    )
+
+    # Cheek blush — warm rosy tint for cheek accent marks (subtle warmth boost)
+    pal["blush"] = (
+        min(sr + 18, 255),
+        max(sg - 10, 0),
+        max(sb - 20, 0),
+        sa,
+    )
+
+    # Eyebrow — slightly darker than hair, for definition against face
+    hr, hg, hb, ha = pal["hair_shade"]
+    pal["eyebrow"] = (
+        max(hr - 12, 0),
+        max(hg - 12, 0),
+        max(hb - 12, 0),
+        ha,
     )
 
     return pal
@@ -581,6 +606,13 @@ def _build_body_down():
     for x in range(11, 18):
         p.append((x, 8, "skin_highlight"))
 
+    # Eyebrows — 2px each, at y=9, using eyebrow color (slightly darker than hair_shade).
+    # Placed directly above the eyes for classic chibi expression.
+    p.append((11, 9, "eyebrow"))   # left brow: above left eye
+    p.append((12, 9, "eyebrow"))
+    p.append((19, 9, "eyebrow"))   # right brow: above right eye
+    p.append((20, 9, "eyebrow"))
+
     # Eyes — 2w x 2h per eye with catchlight, placed at y=10-11
     # Chibi-style: eyes closer together for cute proportions.
     # Left eye (x=11-12), Right eye (x=19-20) — 6px gap between eyes
@@ -597,32 +629,97 @@ def _build_body_down():
     # Subtle: uses nose_shadow (midpoint skin/skin_shade), not black
     p.append((15, 12, "nose_shadow"))
 
-    # Mouth — 2px horizontal line at y=13 (between nose and chin shadow)
-    # Uses muted warm brown-pink, darker than skin_shade
+    # Cheek blush — warm rosy accent under outer eye corners at y=12
+    # Left cheek at x=9-10, right cheek at x=21-22 (just inside crescent shadow)
+    p.append((9,  12, "blush"))
+    p.append((10, 12, "blush"))
+    p.append((21, 12, "blush"))
+    p.append((22, 12, "blush"))
+
+    # Mouth — 4px wide subtle smile at y=13, with slight upward corners.
+    # Wider than before (was 2px) for better facial expressiveness.
+    # Corner pixels use nose_shadow (lighter) to suggest a gentle curve.
+    p.append((14, 13, "nose_shadow"))  # left smile corner (lighter)
     p.append((15, 13, "mouth"))
     p.append((16, 13, "mouth"))
+    p.append((17, 13, "nose_shadow"))  # right smile corner (lighter)
     p.append((19, 11, "eye_white"))       # right eye: sclera lower-left
     p.append((20, 11, "eye"))             # right eye: dark lower-right
 
-    # --- Torso / Shirt (smooth shoulder-to-waist taper) ---
-    # Width: 8→10→14→14→12→12→10→10→10 (added intermediate row)
-    # Sel-out: shoulders use outline_light, waist keeps dark outline
-    p += _row(16, 12, 19, "shirt_shade")  # 8px - neck (head shadow)
-    p += _row(17, 11, 20, "shirt_highlight", "outline_light", "outline_light")  # 10px highlight
-    p += _row(18, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
-    p += _row(19, 9, 22, "shirt", "outline_light", "outline_light")   # 14px shoulders
-    p += _row(20, 10, 21, "shirt")        # 12px
-    p += _row(21, 10, 21, "shirt")        # 12px
-    p += _row(22, 11, 20, "belt")         # 10px belt line
-    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
-    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
+    # --- Torso / Shirt — muscle-shaded, pixel-art chibi conventions ---
+    #
+    # Light source: overhead + top-left. Shading principles (SNES/chibi style):
+    #   • Sternum center (x=14-17) = brightest — direct overhead catch
+    #   • Outer shoulder pixels = shirt_shade — surface curves away from light
+    #   • y=20 outer pixels = shirt_shade — under-pec crease / rib-cage shadow
+    #   • Belt center 2px = shirt_highlight — belt-buckle accent
+    #   • Hip outer pixels = pants_shade — hip curve into legs
+    # AA pixels soften width-step corners (14→12 at shoulders, 12→10 at waist).
 
-    # Torso AA: smooth the shoulder flare (10→14) outer corners
-    p.append((10, 18, "shirt_aa"))   # left shoulder inner corner
-    p.append((21, 18, "shirt_aa"))   # right shoulder inner corner
-    # Torso AA: smooth shoulder→mid-torso (14→12) inner corners
-    p.append((9, 20, "shirt_aa"))    # left under-arm inner corner
-    p.append((22, 20, "shirt_aa"))   # right under-arm inner corner
+    # y=16: neck (sits in head's cast shadow — darkest)
+    p += _row(16, 12, 19, "shirt_shade")
+
+    # y=17: upper chest — sternum highlight strip + shoulder mid-tone sides.
+    # Breaking the uniform highlight creates a rounded chest surface.
+    p.append((11, 17, "outline_light"))
+    for x in range(12, 14):                   # left shoulder side: mid-tone
+        p.append((x, 17, "shirt"))
+    for x in range(14, 18):                   # sternum center: direct overhead light
+        p.append((x, 17, "shirt_highlight"))
+    for x in range(18, 20):                   # right shoulder side: mid-tone
+        p.append((x, 17, "shirt"))
+    p.append((20, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Outer shoulder pixels shade to suggest the shoulder mass curving away.
+    # shirt_aa at the sel-out edge smooths the 10→14 width jump.
+    for y in range(18, 20):
+        p.append((9,  y, "outline_light"))     # sel-out left edge
+        p.append((10, y, "shirt_aa"))          # AA: outline→shoulder transition
+        p.append((11, y, "shirt_shade"))       # outer shoulder: curves from top-left
+        for x in range(12, 20):               # chest center body
+            p.append((x, y, "shirt"))
+        p.append((20, y, "shirt_shade"))       # outer right shoulder
+        p.append((21, y, "shirt_aa"))          # AA: right shoulder→outline
+        p.append((22, y, "outline_light"))     # sel-out right edge
+
+    # y=20: under-pec shadow — the crease/fold below the chest muscle.
+    # Classic SNES technique: 2px of shade each side, leaving the belly
+    # center lit to suggest the separation between chest and abdomen.
+    p.append((10, 20, "outline"))
+    p.append((11, 20, "shirt_shade"))          # left under-pec crease
+    p.append((12, 20, "shirt_shade"))          # left side shadow
+    for x in range(13, 19):                   # belly center: still lit
+        p.append((x, 20, "shirt"))
+    p.append((19, 20, "shirt_shade"))          # right side shadow
+    p.append((20, 20, "shirt_shade"))          # right under-pec crease
+    p.append((21, 20, "outline"))
+    p.append((9,  20, "shirt_aa"))             # under-arm AA (14→12 width step)
+    p.append((22, 20, "shirt_aa"))
+
+    # y=21: lower torso / belly — plain shirt (unshaded belly above belt)
+    p += _row(21, 10, 21, "shirt")
+
+    # y=22: belt — 2px buckle highlight at center for a belt-buckle impression.
+    # Color break between shirt and pants is the primary waist segmentation cue.
+    p.append((11, 22, "outline"))
+    for x in range(12, 15):                   # left belt panel
+        p.append((x, 22, "belt"))
+    p.append((15, 22, "shirt_highlight"))      # buckle left: bright catch
+    p.append((16, 22, "shirt_highlight"))      # buckle right
+    for x in range(17, 20):                   # right belt panel
+        p.append((x, 22, "belt"))
+    p.append((20, 22, "outline"))
+
+    # y=23-24: pants hips — outer 1px per side = pants_shade for hip-curve depth.
+    # Shade implies the hip flaring outward below the waist taper.
+    for y in range(23, 25):
+        p.append((11, y, "outline"))
+        p.append((12, y, "pants_shade"))       # outer hip curve
+        for x in range(13, 19):               # hip center
+            p.append((x, y, "pants"))
+        p.append((19, y, "pants_shade"))       # outer right hip
+        p.append((20, y, "outline"))
 
     # Legs are drawn by the leg pose system (see _WALK_LEGS / _STANDING_LEGS).
     return p
@@ -660,16 +757,52 @@ def _build_body_up():
     p.append((9, 15, "skin_aa"))
     p.append((22, 15, "skin_aa"))
 
-    # --- Torso (back, smooth taper) ---
-    p += _row(16, 12, 19, "shirt_shade")       #  8px neck
-    p += _row(17, 11, 20, "shirt_shade")       # 10px widening
-    p += _row(18, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
-    p += _row(19, 9, 22, "shirt_shade", "outline_light", "outline_light")  # 14px shoulders
-    p += _row(20, 10, 21, "shirt_shade")  # 12px
-    p += _row(21, 10, 21, "shirt_shade")  # 12px
-    p += _row(22, 11, 20, "belt")         # 10px belt
-    p += _row(23, 11, 20, "pants")        # 10px waist (matches pants)
-    p += _row(24, 11, 20, "pants")        # 10px hips (matches pants)
+    # --- Torso (back — muscle-shaded) ---
+    #
+    # Back faces away from the overhead+front light; most of the torso is
+    # shirt_shade. However the shoulder cap tops still catch overhead light,
+    # and the belt/hip segmentation matches the front view.
+
+    # y=16: neck shadow
+    p += _row(16, 12, 19, "shirt_shade")
+
+    # y=17: upper back — uniform shirt_shade (in shadow), but outer shoulder
+    # tops get shirt to suggest the rounded shoulder cap catching overhead light.
+    p.append((11, 17, "outline_light"))
+    p.append((12, 17, "shirt"))            # left shoulder cap top: overhead catch
+    for x in range(13, 19):               # back center: in shadow
+        p.append((x, 17, "shirt_shade"))
+    p.append((19, 17, "shirt"))            # right shoulder cap top
+    p.append((20, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Outer shoulder caps (x=10-11 and x=20-21) slightly lighter to suggest
+    # the shoulder mass seen from above; back body remains shirt_shade.
+    for y in range(18, 20):
+        p.append((9,  y, "outline_light"))
+        p.append((10, y, "shirt_aa"))      # AA: outline→shoulder
+        p.append((11, y, "shirt"))         # shoulder cap: catches overhead light
+        for x in range(12, 20):           # back torso: shirt_shade
+            p.append((x, y, "shirt_shade"))
+        p.append((20, y, "shirt"))         # right shoulder cap
+        p.append((21, y, "shirt_aa"))
+        p.append((22, y, "outline_light"))
+
+    # y=20-21: mid back — all shirt_shade
+    p += _row(20, 10, 21, "shirt_shade")
+    p += _row(21, 10, 21, "shirt_shade")
+
+    # y=22: belt — back view, no buckle visible from behind
+    p += _row(22, 11, 20, "belt")
+
+    # y=23-24: pants hips — outer hip shade matches front view
+    for y in range(23, 25):
+        p.append((11, y, "outline"))
+        p.append((12, y, "pants_shade"))
+        for x in range(13, 19):
+            p.append((x, y, "pants"))
+        p.append((19, y, "pants_shade"))
+        p.append((20, y, "outline"))
 
     # Legs are drawn by the leg pose system.
     return p
@@ -711,35 +844,104 @@ def _build_body_left():
     for x in range(9, 16):
         p.append((x, 8, "skin_highlight"))
 
+    # Eyebrow — 2px above the visible eye, at y=9.
+    # Placed just above the eye at x=9-10.
+    p.append((9, 9, "eyebrow"))
+    p.append((10, 9, "eyebrow"))
+
     # One eye visible (left side) — 2x2 with catchlight, placed toward front of face
     p.append((9, 10, "eye"))              # dark upper-left
     p.append((10, 10, "eye_highlight"))   # catchlight upper-right
     p.append((9, 11, "eye"))              # dark lower-left
     p.append((10, 11, "eye_white"))       # sclera lower-right
 
-    # Nose — 1px bump on front edge of face profile at y=12
-    # Extends 1px forward from face edge for profile silhouette
+    # Cheek blush — warm accent pixel below and outside the eye at y=12
+    p.append((7, 12, "blush"))
+    p.append((8, 12, "blush"))
+
+    # Nose — 2px profile bump at front edge of face (y=11-12)
+    # 2 stacked pixels give a clearer nose bridge silhouette in profile.
+    p.append((5, 11, "nose_shadow"))
     p.append((5, 12, "nose_shadow"))
 
-    # Mouth — 1px on front edge at y=13
+    # Mouth — 1px on front edge at y=13, plus inner pixel for lips
+    p.append((5, 13, "nose_shadow"))   # upper lip profile (lighter)
     p.append((6, 13, "mouth"))
 
-    # --- Torso (side, smooth taper) ---
-    p += _row(16, 11, 18, "shirt_shade")  #  8px neck (head shadow)
-    p += _row(17, 10, 19, "shirt_highlight", "outline_light", "outline_light")  # 10px
-    p += _row(18, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulder flare
-    p += _row(19, 8, 21, "shirt", "outline_light", "outline_light")   # 14px shoulders
-    p += _row(20, 9, 20, "shirt")         # 12px
-    p += _row(21, 9, 20, "shirt")         # 12px
-    p += _row(22, 10, 19, "belt")         # 10px belt
-    p += _row(23, 10, 19, "pants")        # 10px waist (matches pants)
-    p += _row(24, 10, 19, "pants")        # 10px hips (matches pants)
+    # --- Torso (side — muscle-shaded for profile depth) ---
+    #
+    # Left-facing character: front of body = small x (lit), back = large x (shadow).
+    # Light source overhead+left: front-chest pixels are brightest.
+    # shirt_shade on the back 2-3 pixels of each row creates a curved tube illusion.
+    # The front→back gradient: shirt_highlight → shirt → shirt_shade conveys depth.
 
-    # Torso AA: shoulder flare and under-arm transitions
-    p.append((9, 18, "shirt_aa"))   # left shoulder inner corner
-    p.append((20, 18, "shirt_aa"))  # right shoulder inner corner
-    p.append((8, 20, "shirt_aa"))   # left under-arm inner corner
-    p.append((21, 20, "shirt_aa"))  # right under-arm inner corner
+    # y=16: neck shadow
+    p += _row(16, 11, 18, "shirt_shade")
+
+    # y=17: upper chest profile — front lit, back shaded.
+    p.append((10, 17, "outline_light"))
+    for x in range(11, 14):               # front chest: highlight (direct overhead)
+        p.append((x, 17, "shirt_highlight"))
+    for x in range(14, 17):               # chest center: mid-tone
+        p.append((x, 17, "shirt"))
+    p.append((17, 17, "shirt_shade"))      # chest back: curves away
+    p.append((18, 17, "shirt_shade"))
+    p.append((19, 17, "outline_light"))
+
+    # y=18-19: shoulder flare (14px).
+    # Front face lit, back face in shade. shirt_aa at edges.
+    for y in range(18, 20):
+        p.append((8,  y, "outline_light"))
+        p.append((9,  y, "shirt_aa"))      # front AA edge
+        for x in range(10, 17):           # front+center: shirt (front face lit)
+            p.append((x, y, "shirt"))
+        p.append((17, y, "shirt_shade"))   # back shoulder: curves away
+        p.append((18, y, "shirt_shade"))
+        p.append((19, y, "shirt_shade"))
+        p.append((20, y, "shirt_aa"))      # back AA edge
+        p.append((21, y, "outline_light"))
+
+    # y=20: mid torso — under-pec / side body shadow on back pixels.
+    p.append((9,  20, "outline"))
+    p.append((8,  20, "shirt_aa"))         # under-arm AA
+    for x in range(10, 16):               # front+center belly: shirt
+        p.append((x, 20, "shirt"))
+    p.append((16, 20, "shirt_shade"))      # back torso shade
+    p.append((17, 20, "shirt_shade"))
+    p.append((18, 20, "shirt_shade"))
+    p.append((19, 20, "shirt_shade"))
+    p.append((20, 20, "outline"))
+    p.append((21, 20, "shirt_aa"))         # right under-arm AA
+
+    # y=21: lower belly — same depth gradient
+    p.append((9,  21, "outline"))
+    for x in range(10, 16):
+        p.append((x, 21, "shirt"))
+    p.append((16, 21, "shirt_shade"))
+    p.append((17, 21, "shirt_shade"))
+    p.append((18, 21, "shirt_shade"))
+    p.append((19, 21, "shirt_shade"))
+    p.append((20, 21, "outline"))
+
+    # y=22: belt — buckle highlight matches front/back view
+    p.append((10, 22, "outline"))
+    for x in range(11, 13):
+        p.append((x, 22, "belt"))
+    p.append((13, 22, "shirt_highlight"))  # buckle
+    p.append((14, 22, "shirt_highlight"))
+    for x in range(15, 19):
+        p.append((x, 22, "belt"))
+    p.append((19, 22, "outline"))
+
+    # y=23-24: pants hips — back pixels shade for hip curve depth
+    for y in range(23, 25):
+        p.append((10, y, "outline"))
+        for x in range(11, 16):           # front hip: pants
+            p.append((x, y, "pants"))
+        p.append((16, y, "pants_shade"))   # back hip curve
+        p.append((17, y, "pants_shade"))
+        p.append((18, y, "pants_shade"))
+        p.append((19, y, "outline"))
 
     # Legs are drawn by the leg pose system.
     return p
@@ -902,6 +1104,7 @@ _LEG_Y_OFFSETS = {
     "jump":     [1, 0, -2, 1],
     "crouch":   [0, 0, 1, 0],
     "interact": [0, 0, 0, 0],
+    "slash":    [0, 0, 0, 0],
 }
 
 
@@ -949,87 +1152,246 @@ _SHOULDERS = {
 
 _ARM_POSE_LEFT = {
     "rest":       [],
+    # hang: arm rests at side.
+    # Inner pixel (dx=-1, body-facing) uses skin_shade for tube roundness.
+    # Elbow row (dy=3): 1 extra pixel outward (dx=-4) to suggest the joint.
+    # Forearm (dy=4-5): all skin_shade — further from light, turning away.
     "hang":       [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
+        (-1, 0, "skin_shade"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        # Elbow: protrudes 1px outward; adjacent pixel shifts to skin_shade for curve
+        (-1, 3, "skin"),       (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        # Forearm
         (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
     ],
+    # swing_fwd: peak forward swing. Elbow at dy=1 (shorter upper arm visible from front).
     "swing_fwd":  [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
-        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, -1, "skin"),      (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        # Elbow
+        (-1, 1,  "skin"),      (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        # Forearm
+        (-1, 2,  "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
     ],
+    # mid_fwd: intermediate position between hang and swing_fwd.
+    "mid_fwd": [
+        (-1, -1, "skin"),      (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-1, 1,  "skin_shade"), (-2, 1,  "skin"), (-3, 1,  "outline"),
+        # Elbow
+        (-1, 2,  "skin"),      (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        # Forearm
+        (-1, 3,  "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "outline"),
+        (-1, 4,  "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+    ],
+    # swing_back: peak backward swing. Elbow at dy=4.
     "swing_back": [
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin"), (-2, 4, "skin"), (-3, 4, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin"), (-3, 3, "outline"),
+        # Elbow
+        (-1, 4, "skin"),       (-2, 4, "skin"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        # Forearm
         (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
         (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "outline"),
     ],
+    # mid_back: intermediate position between hang and swing_back.
+    "mid_back": [
+        (-1, 0, "skin_shade"), (-2, 0, "skin"), (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"), (-3, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "skin"), (-3, 2, "outline"),
+        # Elbow
+        (-1, 3, "skin"),       (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        # Forearm
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+    ],
+    # raised: arm angled up-and-out diagonally. Inner pixel shaded on each segment.
     "raised":     [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-4, -3, "skin"), (-5, -3, "skin"), (-6, -3, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-2, -1, "skin_shade"), (-3, -1, "skin"), (-4, -1, "outline"),
+        (-3, -2, "skin_shade"), (-4, -2, "skin"), (-5, -2, "outline"),
+        (-4, -3, "skin_shade"), (-5, -3, "skin_shade"), (-6, -3, "outline"),
     ],
+    # reach_up: arm reaching upward diagonally.
     "reach_up":   [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-3, -3, "skin"), (-4, -3, "skin"), (-5, -3, "outline"),
+        (-1, 0,  "skin_shade"), (-2, 0,  "skin"), (-3, 0,  "outline"),
+        (-2, -1, "skin_shade"), (-3, -1, "skin"), (-4, -1, "outline"),
+        (-3, -2, "skin_shade"), (-4, -2, "skin"), (-5, -2, "outline"),
+        (-3, -3, "skin_shade"), (-4, -3, "skin"), (-5, -3, "outline"),
     ],
-    # Side views — 3px wide
+    # Side views — 4px wide for a rounder tube look.
+    # dx=-1: front face (toward viewer/camera) = skin (lit)
+    # dx=-2: center = skin
+    # dx=-3: back face (away from viewer) = skin_shade (shadowed)
+    # dx=-4: outer edge = outline
+    # Upper arm rows use skin; forearm rows use skin_shade throughout.
     "side_hang":  [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
-        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
     ],
+    # side_fwd: arm swings forward (raised, starts 1px above shoulder).
     "side_fwd":   [
-        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "outline"),
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin_shade"), (-2, 2, "skin_shade"), (-3, 2, "outline"),
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "skin_shade"), (-4, -1, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-1, 1,  "skin"), (-2, 1,  "skin"), (-3, 1,  "skin_shade"), (-4, 1,  "outline"),
+        (-1, 2,  "skin_shade"), (-2, 2,  "skin_shade"), (-3, 2,  "skin_shade"), (-4, 2,  "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3,  "skin_shade"), (-3, 3,  "skin_shade"), (-4, 3,  "outline"),
     ],
+    # side_fwd_mid: halfway between side_hang and side_fwd.
+    "side_fwd_mid": [
+        (-1, -1, "skin"), (-2, -1, "skin"), (-3, -1, "skin_shade"), (-4, -1, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-1, 1,  "skin"), (-2, 1,  "skin"), (-3, 1,  "skin_shade"), (-4, 1,  "outline"),
+        (-1, 2,  "skin"), (-2, 2,  "skin"), (-3, 2,  "skin_shade"), (-4, 2,  "outline"),
+        (-1, 3,  "skin_shade"), (-2, 3,  "skin_shade"), (-3, 3,  "skin_shade"), (-4, 3,  "outline"),
+        (-1, 4,  "skin_shade"), (-2, 4,  "skin_shade"), (-3, 4,  "skin_shade"), (-4, 4,  "outline"),
+    ],
+    # side_back: arm swings backward (dropped). 6 rows.
     "side_back":  [
-        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "outline"),
-        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "outline"),
-        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "outline"),
-        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "outline"),
-        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin"), (-2, 3, "skin"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
+        (-1, 6, "skin_shade"), (-2, 6, "skin_shade"), (-3, 6, "skin_shade"), (-4, 6, "outline"),
     ],
+    # side_back_mid: halfway between side_hang and side_back.
+    "side_back_mid": [
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-1, 1, "skin"), (-2, 1, "skin"), (-3, 1, "skin_shade"), (-4, 1, "outline"),
+        (-1, 2, "skin"), (-2, 2, "skin"), (-3, 2, "skin_shade"), (-4, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "skin_shade"), (-3, 3, "skin_shade"), (-4, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "skin_shade"), (-3, 4, "skin_shade"), (-4, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "skin_shade"), (-3, 5, "skin_shade"), (-4, 5, "outline"),
+    ],
+    # Back-arm peek poses: 2px wide strip shown peeking from behind the body.
+    # Darker (skin_shade) with outline to read as being behind the torso.
+    # NOTE: these poses are only ever assigned to the BACK arm (r_pose in left view,
+    # l_pose in right view), so the dx values here are intentionally written for the
+    # left-arm pivot convention — mirroring flips them to extend the other direction.
+    "side_back_peek": [
+        (-1, 0, "skin_shade"), (-2, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "outline"),
+    ],
+    # Back arm peeking while swinging forward (arm lifted slightly)
+    "side_back_peek_fwd": [
+        (-1, -1, "skin_shade"), (-2, -1, "outline"),
+        (-1, 0, "skin_shade"), (-2, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+    ],
+    # Back arm peeking while swinging backward (arm dropped slightly)
+    "side_back_peek_back": [
+        (-1, 1, "skin_shade"), (-2, 1, "outline"),
+        (-1, 2, "skin_shade"), (-2, 2, "outline"),
+        (-1, 3, "skin_shade"), (-2, 3, "outline"),
+        (-1, 4, "skin_shade"), (-2, 4, "outline"),
+        (-1, 5, "skin_shade"), (-2, 5, "outline"),
+        (-1, 6, "skin_shade"), (-2, 6, "outline"),
+    ],
+    # side_raise: arm raised diagonally upward. 4px cross-section per segment.
     "side_raise": [
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "outline"),
-        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "outline"),
-        (-4, -3, "skin"), (-5, -3, "skin"), (-6, -3, "outline"),
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "skin_shade"), (-5, -1, "outline"),
+        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "skin_shade"), (-6, -2, "outline"),
+        (-4, -3, "skin_shade"), (-5, -3, "skin_shade"), (-6, -3, "skin_shade"), (-7, -3, "outline"),
     ],
     # Interact poses — arm rotates forward from side
     "side_interact_45": [
-        # -45° from vertical: diagonal, each segment shifts 1px forward
-        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "outline"),
-        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "outline"),
-        (-3, 2, "skin"), (-4, 2, "skin"), (-5, 2, "outline"),
-        (-4, 3, "skin"), (-5, 3, "skin"), (-6, 3, "outline"),
-        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "outline"),
+        # -45° from vertical: diagonal, each segment shifts 1px forward per row.
+        # 4px cross-section: front=skin, center=skin, back=skin_shade, edge=outline.
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "skin_shade"), (-5, 1, "outline"),
+        (-3, 2, "skin"), (-4, 2, "skin"), (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "skin_shade"), (-7, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "skin_shade"), (-8, 4, "outline"),
     ],
     "side_interact_90": [
-        # -90° from vertical: horizontal, arm points forward
-        # Width (3px) now in dy, length in dx
-        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"),
-        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"),
-        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"),
-        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"),
-        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"),
-        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"),
+        # -90° from vertical: horizontal arm pointing forward.
+        # 4px cross-section in dy: top=outline, then skin, skin, skin_shade.
+        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"), (-1, 2, "skin_shade"),
+        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"), (-2, 2, "skin_shade"),
+        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"), (-3, 2, "skin_shade"),
+        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"), (-4, 2, "skin_shade"),
+        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"), (-5, 2, "skin_shade"),
+        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"), (-6, 2, "skin_shade"),
+    ],
+
+    # ---------------------------------------------------------------------------
+    # SLASH / ATTACK poses
+    # ---------------------------------------------------------------------------
+    # slash_windup: arm raised straight up — weapon held high before strike.
+    # (inner-body pixel = skin_shade, outer = skin, edge = outline, elbow bump at dy=-3)
+    "slash_windup": [
+        (-1, -1, "skin_shade"), (-2, -1, "skin"), (-3, -1, "outline"),
+        (-1, -2, "skin_shade"), (-2, -2, "skin"), (-3, -2, "outline"),
+        # Elbow bump (arm slightly bent, protrudes outward)
+        (-1, -3, "skin"),       (-2, -3, "skin"), (-3, -3, "skin_shade"), (-4, -3, "outline"),
+        # Forearm: raised above head
+        (-1, -4, "skin_shade"), (-2, -4, "skin_shade"), (-3, -4, "outline"),
+        (-1, -5, "skin_shade"), (-2, -5, "skin_shade"), (-3, -5, "outline"),
+    ],
+    # slash_strike: arm swings diagonally outward-downward (the impact frame).
+    # Arm extends outward from shoulder; each row shifts 1px further out.
+    "slash_strike": [
+        (-1, 0, "skin_shade"), (-2, 0, "skin"),  (-3, 0, "outline"),
+        (-2, 1, "skin_shade"), (-3, 1, "skin"),  (-4, 1, "outline"),
+        # Elbow bump at dy=2
+        (-3, 2, "skin"),       (-4, 2, "skin"),  (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        # Forearm extends out further
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "outline"),
+    ],
+    # slash_follow: arm extended diagonally forward after the strike.
+    # Less reach than strike — arm settles forward rather than fully out.
+    "slash_follow": [
+        (-1, 0, "skin_shade"), (-2, 0, "skin"),  (-3, 0, "outline"),
+        (-1, 1, "skin_shade"), (-2, 1, "skin"),  (-3, 1, "outline"),
+        (-2, 2, "skin_shade"), (-3, 2, "skin"),  (-4, 2, "outline"),
+        # Elbow bump at dy=3
+        (-3, 3, "skin"),       (-4, 3, "skin"),  (-5, 3, "skin_shade"), (-6, 3, "outline"),
+        # Forearm
+        (-4, 4, "skin_shade"), (-5, 4, "skin_shade"), (-6, 4, "outline"),
+    ],
+    # side_slash_windup: side-view arm raised high (4px tube cross-section).
+    # Upper arm goes up-outward; forearm curls back above head.
+    "side_slash_windup": [
+        (-1, 0,  "skin"), (-2, 0,  "skin"), (-3, 0,  "skin_shade"), (-4, 0,  "outline"),
+        (-2, -1, "skin"), (-3, -1, "skin"), (-4, -1, "skin_shade"), (-5, -1, "outline"),
+        (-3, -2, "skin"), (-4, -2, "skin"), (-5, -2, "skin_shade"), (-6, -2, "outline"),
+        # Forearm curls back (dx shifts inward)
+        (-2, -3, "skin_shade"), (-3, -3, "skin_shade"), (-4, -3, "skin_shade"), (-5, -3, "outline"),
+        (-1, -4, "skin_shade"), (-2, -4, "skin_shade"), (-3, -4, "skin_shade"), (-4, -4, "outline"),
+    ],
+    # side_slash_strike: side-view arm swings forward diagonally (45° forward arc).
+    "side_slash_strike": [
+        (-1, 0, "skin"), (-2, 0, "skin"), (-3, 0, "skin_shade"), (-4, 0, "outline"),
+        (-2, 1, "skin"), (-3, 1, "skin"), (-4, 1, "skin_shade"), (-5, 1, "outline"),
+        (-3, 2, "skin_shade"), (-4, 2, "skin_shade"), (-5, 2, "skin_shade"), (-6, 2, "outline"),
+        (-4, 3, "skin_shade"), (-5, 3, "skin_shade"), (-6, 3, "skin_shade"), (-7, 3, "outline"),
+        (-5, 4, "skin_shade"), (-6, 4, "skin_shade"), (-7, 4, "skin_shade"), (-8, 4, "outline"),
+    ],
+    # side_slash_follow: side-view arm horizontal — fully extended forward after slash.
+    "side_slash_follow": [
+        (-1, -1, "outline"), (-1, 0, "skin"), (-1, 1, "skin"), (-1, 2, "skin_shade"),
+        (-2, -1, "outline"), (-2, 0, "skin"), (-2, 1, "skin"), (-2, 2, "skin_shade"),
+        (-3, -1, "outline"), (-3, 0, "skin"), (-3, 1, "skin"), (-3, 2, "skin_shade"),
+        (-4, -1, "outline"), (-4, 0, "skin"), (-4, 1, "skin"), (-4, 2, "skin_shade"),
+        (-5, -1, "outline"), (-5, 0, "skin_shade"), (-5, 1, "skin_shade"), (-5, 2, "skin_shade"),
+        (-6, -1, "outline"), (-6, 0, "skin_shade"), (-6, 1, "skin_shade"), (-6, 2, "skin_shade"),
     ],
 }
 
@@ -1065,29 +1427,41 @@ def _get_arm_pixels(direction, animation, frame_idx):
 # Arm pose schedule per animation.
 _ARM_ANIM_POSES = {
     "walk": {
+        # Front-facing walk: 4-frame arm swing opposite to legs.
+        # F0: right arm slightly forward, left slightly back (contact pose 1)
+        # F1: peak swing — left fwd, right back
+        # F2: left arm slightly forward, right slightly back (contact pose 2, mirror of F0)
+        # F3: peak swing — left back, right fwd
         "down": [
-            ("hang",      "hang"),
+            ("mid_fwd",   "mid_back"),
             ("swing_fwd", "swing_back"),
-            ("hang",      "hang"),
+            ("mid_back",  "mid_fwd"),
             ("swing_back", "swing_fwd"),
         ],
+        # Back-facing walk: same cadence as front
         "up": [
-            ("hang",      "hang"),
+            ("mid_fwd",   "mid_back"),
             ("swing_fwd", "swing_back"),
-            ("hang",      "hang"),
+            ("mid_back",  "mid_fwd"),
             ("swing_back", "swing_fwd"),
         ],
+        # Side walk: front arm swings full arc; back arm peeks from behind body.
+        # Peek poses use skin_shade + outline to read as behind the torso.
+        # F0: contact — front arm neutral, back arm peeks at neutral height
+        # F1: passing — front arm swings forward, back arm peeks swung back
+        # F2: contact — same neutral (mirror stride)
+        # F3: passing — front arm swings back, back arm peeks swung forward
         "left": [
-            ("side_hang", "rest"),
-            ("side_fwd",  "rest"),
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
+            ("side_hang",    "side_back_peek"),
+            ("side_fwd",     "side_back_peek_back"),
+            ("side_hang",    "side_back_peek"),
+            ("side_back",    "side_back_peek_fwd"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_fwd"),
-            ("rest", "side_hang"),
-            ("rest", "side_back"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_fwd"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_fwd",  "side_back"),
         ],
     },
     "jump": {
@@ -1103,43 +1477,45 @@ _ARM_ANIM_POSES = {
             ("raised", "raised"),
             ("swing_fwd", "swing_fwd"),
         ],
+        # Jump side: front arm swings up into raise; back arm peeks (swings opposite)
         "left": [
-            ("side_hang",  "rest"),
-            ("side_fwd",   "rest"),
-            ("side_raise", "rest"),
-            ("side_fwd",   "rest"),
+            ("side_hang",    "side_back_peek"),
+            ("side_fwd_mid", "side_back_peek_back"),
+            ("side_raise",   "side_back_peek_fwd"),
+            ("side_fwd_mid", "side_back_peek_back"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_fwd"),
-            ("rest", "side_raise"),
-            ("rest", "side_fwd"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_fwd_mid"),
+            ("side_back_peek_fwd",  "side_raise"),
+            ("side_back_peek_back", "side_fwd_mid"),
         ],
     },
     "crouch": {
+        # Crouch: arms drop back as character hunches. Hold-down frames use swing_back.
         "down": [
             ("hang",       "hang"),
+            ("mid_back",   "mid_back"),
             ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
+            ("mid_back",   "mid_back"),
         ],
         "up": [
             ("hang",       "hang"),
+            ("mid_back",   "mid_back"),
             ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
-            ("swing_back", "swing_back"),
+            ("mid_back",   "mid_back"),
         ],
         "left": [
-            ("side_hang", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
-            ("side_back", "rest"),
+            ("side_hang",     "side_back_peek"),
+            ("side_back_mid", "side_back_peek_back"),
+            ("side_back",     "side_back_peek_back"),
+            ("side_back_mid", "side_back_peek_back"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_back"),
-            ("rest", "side_back"),
-            ("rest", "side_back"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_back_mid"),
+            ("side_back_peek_back", "side_back"),
+            ("side_back_peek_back", "side_back_mid"),
         ],
     },
     "interact": {
@@ -1155,17 +1531,54 @@ _ARM_ANIM_POSES = {
             ("hang", "raised"),
             ("hang", "swing_fwd"),
         ],
+        # Interact side: front arm reaches out; back arm peeks (slightly back/hanging)
         "left": [
-            ("side_hang",          "rest"),
-            ("side_interact_45",   "rest"),
-            ("side_interact_90",   "rest"),
-            ("side_hang",          "rest"),
+            ("side_hang",        "side_back_peek"),
+            ("side_interact_45", "side_back_peek_back"),
+            ("side_interact_90", "side_back_peek_back"),
+            ("side_hang",        "side_back_peek"),
         ],
         "right": [
-            ("rest", "side_hang"),
-            ("rest", "side_interact_45"),
-            ("rest", "side_interact_90"),
-            ("rest", "side_hang"),
+            ("side_back_peek",      "side_hang"),
+            ("side_back_peek_back", "side_interact_45"),
+            ("side_back_peek_back", "side_interact_90"),
+            ("side_back_peek",      "side_hang"),
+        ],
+    },
+    # ---------------------------------------------------------------------------
+    # SLASH animation — 4 frames: windup → strike → follow-through → recover
+    # Right arm = weapon arm (primary); left arm = counterbalance (off-hand).
+    # ---------------------------------------------------------------------------
+    "slash": {
+        # Front-facing slash: right arm swings from raised windup down through a diagonal arc.
+        # Left (off-hand) swings opposite for balance (back during windup, forward on strike).
+        "down": [
+            ("mid_back",      "slash_windup"),   # F0 windup: weapon arm raised, off-hand back
+            ("mid_fwd",       "slash_strike"),   # F1 strike: weapon arm diagonal forward-down
+            ("mid_fwd",       "slash_follow"),   # F2 follow: arm settles forward, off-hand forward
+            ("hang",          "hang"),           # F3 recover: both arms return to neutral
+        ],
+        # Back-facing slash: same cadence as front (back view shows same arm positions).
+        "up": [
+            ("mid_back",      "slash_windup"),
+            ("mid_fwd",       "slash_strike"),
+            ("mid_fwd",       "slash_follow"),
+            ("hang",          "hang"),
+        ],
+        # Left-facing slash: front arm (left) swings through the full attack arc.
+        # Back arm (right) peeks from behind — it's the supporting hand.
+        "left": [
+            ("side_slash_windup",  "side_back_peek_back"),   # F0 windup
+            ("side_slash_strike",  "side_back_peek"),        # F1 strike
+            ("side_slash_follow",  "side_back_peek_fwd"),    # F2 follow-through
+            ("side_hang",          "side_back_peek"),        # F3 recover
+        ],
+        # Right-facing slash: mirror of left — front arm is the right arm.
+        "right": [
+            ("side_back_peek_back", "side_slash_windup"),
+            ("side_back_peek",      "side_slash_strike"),
+            ("side_back_peek_fwd",  "side_slash_follow"),
+            ("side_back_peek",      "side_hang"),
         ],
     },
 }
@@ -1275,6 +1688,34 @@ ANIM_OFFSETS = {
         },
         "right": {
             "head":  [(0, 0), (0, 0),  (0, -1), (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+    },
+    # Slash: body leans slightly forward on strike, head bobs with the motion.
+    # F0=windup, F1=strike (lean in), F2=follow-through, F3=recover
+    "slash": {
+        "down": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "up": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "left": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
+            "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+            "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
+        },
+        "right": {
+            "head":  [(0, 0), (0, -1), (0, 0),  (0, 0)],
             "body":  [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_l": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
             "leg_r": [(0, 0), (0, 0),  (0, 0),  (0, 0)],
@@ -1463,7 +1904,7 @@ def build_preview_html(sprite_name: str, image_file: str, atlas_file: str) -> st
 </head>
 <body>
 <h1>{sprite_name}</h1>
-<p class="info">v9 — 32x32 enhanced face + torso ({TILE_SIZE}px grid, {scale}x render)</p>
+<p class="info">v12 — 32x32 muscle-shaded torso (sternum highlight, under-pec shadow, belt buckle, hip curve) + face + arms ({TILE_SIZE}px grid, {scale}x render)</p>
 
 <canvas id="anim" width="{FRAME_W * 6}" height="{FRAME_H * 6}"></canvas>
 
