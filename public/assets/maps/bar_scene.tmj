@@ -875,11 +875,8 @@
   "tileheight": 32,
   "tilesets": [
     {
-      "columns": 3,
+      "columns": 0,
       "firstgid": 1,
-      "image": "C:/Users/jjohnson/phaser-mobile-game-topdown/public/assets/sprites/bar_tileset.png",
-      "imageheight": 32,
-      "imagewidth": 96,
       "margin": 0,
       "name": "BarTiles",
       "spacing": 0,
@@ -889,7 +886,7 @@
       "tiles": [
         {
           "id": 0,
-          "image": "C:/Users/jjohnson/phaser-mobile-game-topdown/public/assets/sprites/wood_floor.png",
+          "image": "../sprites/wood_floor.png",
           "imageheight": 32,
           "imagewidth": 32,
           "properties": [
