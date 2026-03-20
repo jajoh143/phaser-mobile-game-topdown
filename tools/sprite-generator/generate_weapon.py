@@ -115,6 +115,114 @@ WEAPON_PALETTES = {
         "pommel":    (148, 112, 32, 255),
         "pommel_hl": (208, 168, 72, 255),
     },
+    # ── Modern / Urban ──────────────────────────────────────────────────────
+    "pistol": {
+        "outline":   (20, 18, 25, 255),
+        "slide":     (58, 62, 72, 255),
+        "slide_hl":  (92, 96, 110, 255),
+        "slide_sh":  (35, 37, 45, 255),
+        "frame":     (48, 50, 60, 255),
+        "frame_hl":  (72, 75, 88, 255),
+        "grip":      (28, 22, 20, 255),
+        "grip_hl":   (50, 42, 38, 255),
+        "grip_tx":   (18, 14, 12, 255),
+        "bore":      (8,  6,  10, 255),
+        "guard":     (45, 47, 57, 255),
+        "trigger":   (68, 72, 82, 255),
+    },
+    "shotgun": {
+        "outline":   (22, 20, 27, 255),
+        "barrel":    (68, 72, 80, 255),
+        "barrel_hl": (105, 110, 120, 255),
+        "barrel_sh": (40, 42, 50, 255),
+        "pump":      (78, 55, 28, 255),
+        "pump_hl":   (118, 88, 48, 255),
+        "pump_sh":   (50, 32, 12, 255),
+        "stock":     (110, 72, 30, 255),
+        "stock_hl":  (155, 108, 55, 255),
+        "stock_sh":  (68, 42, 15, 255),
+        "bore":      (8,  6,  10, 255),
+        "guard":     (55, 57, 65, 255),
+        "trigger":   (75, 78, 88, 255),
+    },
+    "rifle": {
+        "outline":   (18, 16, 22, 255),
+        "body":      (45, 48, 55, 255),
+        "body_hl":   (72, 76, 85, 255),
+        "body_sh":   (28, 30, 36, 255),
+        "stock":     (38, 32, 28, 255),
+        "stock_hl":  (62, 53, 46, 255),
+        "stock_sh":  (22, 18, 15, 255),
+        "barrel":    (65, 68, 76, 255),
+        "barrel_hl": (100, 104, 115, 255),
+        "barrel_sh": (38, 40, 48, 255),
+        "mag":       (55, 58, 65, 255),
+        "mag_hl":    (82, 86, 95, 255),
+        "mag_sh":    (32, 34, 40, 255),
+        "bore":      (8,  6,  10, 255),
+        "rail":      (35, 37, 44, 255),
+        "guard":     (40, 42, 50, 255),
+        "trigger":   (62, 65, 74, 255),
+    },
+    "bat": {
+        "outline":   (28, 22, 16, 255),
+        "wood":      (178, 122, 55, 255),
+        "wood_hl":   (222, 168, 90, 255),
+        "wood_sh":   (118, 78, 28, 255),
+        "wood_dk":   (88, 55, 18, 255),
+        "tape":      (35, 30, 28, 255),
+        "tape_hl":   (58, 50, 46, 255),
+        "knob":      (155, 108, 48, 255),
+        "knob_hl":   (200, 152, 78, 255),
+    },
+    "knife": {
+        "outline":   (20, 18, 24, 255),
+        "blade":     (188, 198, 210, 255),
+        "blade_hl":  (232, 240, 250, 255),
+        "blade_sh":  (125, 135, 148, 255),
+        "serrate":   (158, 168, 180, 255),
+        "handle":    (25, 20, 18, 255),
+        "handle_hl": (48, 40, 36, 255),
+        "handle_tx": (15, 12, 10, 255),
+        "guard":     (68, 72, 80, 255),
+        "guard_hl":  (100, 105, 115, 255),
+        "bolt":      (128, 118, 88, 255),
+    },
+    "chain": {
+        "outline":   (25, 22, 30, 255),
+        "metal":     (132, 136, 148, 255),
+        "metal_hl":  (182, 188, 200, 255),
+        "metal_sh":  (75, 78, 88, 255),
+        "link_in":   (108, 112, 122, 255),
+    },
+    "molotov": {
+        "outline":   (25, 20, 18, 255),
+        "glass":     (148, 188, 148, 255),
+        "glass_hl":  (198, 228, 195, 255),
+        "glass_sh":  (88, 128, 88, 255),
+        "liquid":    (185, 115, 35, 255),
+        "liquid_hl": (225, 155, 65, 255),
+        "rag":       (195, 172, 125, 255),
+        "rag_sh":    (145, 120, 75, 255),
+        "flame":     (225, 95, 25, 255),
+        "flame_hl":  (245, 178, 65, 255),
+        "flame_tip": (250, 228, 108, 255),
+    },
+    "taser": {
+        "outline":   (20, 18, 25, 255),
+        "body":      (48, 52, 162, 255),
+        "body_hl":   (82, 88, 205, 255),
+        "body_sh":   (28, 32, 112, 255),
+        "grip":      (32, 28, 25, 255),
+        "grip_hl":   (54, 46, 42, 255),
+        "grip_tx":   (18, 15, 12, 255),
+        "prong":     (218, 198, 68, 255),
+        "prong_hl":  (250, 238, 120, 255),
+        "arc":       (165, 188, 252, 255),
+        "arc_hl":    (222, 235, 255, 255),
+        "trigger":   (65, 68, 78, 255),
+        "label":     (200, 200, 220, 255),
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -524,7 +632,481 @@ def _greatsword_pixels():
     return p
 
 
+# ---------------------------------------------------------------------------
+# MODERN WEAPON PIXEL DEFINITIONS  (East orientation — barrel/tip points right)
+# ---------------------------------------------------------------------------
+
+def _pistol_pixels():
+    """Semi-auto handgun — barrel points east (right), grip hangs south."""
+    p = []
+    SL, SR = 8, 27   # slide left/right x
+    ST, SB = 12, 16  # slide top/bottom y (barrel centerline at y=13-14)
+
+    # ---- Slide (horizontal body) ----
+    p += [(x, ST - 1, "outline") for x in range(SL, SR + 1)]
+    p += [(x, ST,     "slide_hl") for x in range(SL, SR)]
+    p += [(x, ST + 1, "slide")    for x in range(SL, SR)]
+    p += [(x, ST + 2, "slide")    for x in range(SL, SR)]
+    p += [(x, ST + 3, "frame")    for x in range(SL, SL + 10)]
+    p += [(x, ST + 3, "slide_sh") for x in range(SL + 10, SR)]
+    p += [(x, SB, "outline")  for x in range(SL - 1, SR + 2)]
+    p += [(SL - 1, y, "outline") for y in range(ST, SB)]
+
+    # ---- Muzzle ----
+    p += [(SR, ST, "bore"), (SR, ST + 1, "bore"), (SR, ST + 2, "bore")]
+    p += [(SR + 1, y, "outline") for y in range(ST, SB)]
+
+    # ---- Sights ----
+    p += [(SL + 1, ST - 2, "outline"), (SL + 2, ST - 2, "slide_hl")]  # rear
+    p += [(SR - 3, ST - 2, "outline"), (SR - 3, ST - 1, "slide_hl")]  # front
+
+    # ---- Ejection port slot ----
+    for x in range(SL + 8, SL + 11):
+        p.append((x, ST, "bore"))
+
+    # ---- Frame (lower receiver) ----
+    FL, FR = SL, SL + 10
+    for y in range(SB, SB + 4):
+        c = "frame_hl" if y == SB else "frame"
+        p += [(x, y, c) for x in range(FL, FR + 1)]
+        p += [(FL - 1, y, "outline"), (FR + 1, y, "outline")]
+    p += [(x, SB + 4, "outline") for x in range(FL - 1, FR + 2)]
+
+    # ---- Trigger guard ----
+    TGL, TGR = FL + 3, FL + 8
+    for y in range(SB, SB + 7):
+        p += [(TGL, y, "guard"), (TGR, y, "guard")]
+    p += [(x, SB + 7, "guard") for x in range(TGL + 1, TGR)]
+    p += [(x, SB + 8, "outline") for x in range(TGL, TGR + 1)]
+    p += [(TGL - 1, SB, "outline"), (TGR + 1, SB, "outline")]
+
+    # ---- Trigger ----
+    TX = TGL + 2
+    p += [(TX, SB + 1, "trigger"), (TX, SB + 2, "trigger"), (TX, SB + 3, "trigger")]
+
+    # ---- Grip ----
+    GX0, GX1 = FL, FL + 4
+    for y in range(SB + 3, SB + 12):
+        for x in range(GX0, GX1 + 1):
+            c = "grip_hl" if x == GX0 else ("grip_tx" if (x + y) % 3 == 0 else "grip")
+            p.append((x, y, c))
+        p += [(GX0 - 1, y, "outline"), (GX1 + 1, y, "outline")]
+    p += [(x, SB + 12, "outline") for x in range(GX0 - 1, GX1 + 2)]
+
+    return p
+
+
+def _shotgun_pixels():
+    """Pump-action shotgun — barrel points east, wood stock on west."""
+    p = []
+    CY = 14  # barrel center y
+
+    # ---- Wood stock (x=2-9) ----
+    for x in range(2, 10):
+        spread = 4 - max(0, (x - 2) // 3)
+        for dy in range(-spread, spread + 1):
+            c = "stock_hl" if dy < 0 else ("stock_sh" if dy >= spread - 1 else "stock")
+            p.append((x, CY + dy, c))
+        p += [(x, CY - spread - 1, "outline"), (x, CY + spread + 1, "outline")]
+    p += [(1, CY + dy, "outline") for dy in range(-3, 4)]
+
+    # ---- Receiver / action body (x=9-14) ----
+    for x in range(9, 15):
+        p += [(x, CY - 3, "outline"),
+              (x, CY - 2, "barrel_hl"),
+              (x, CY - 1, "barrel"),
+              (x, CY,     "barrel"),
+              (x, CY + 1, "barrel"),
+              (x, CY + 2, "barrel_sh"),
+              (x, CY + 3, "outline")]
+
+    # ---- Barrel (x=14-28) ----
+    for x in range(14, 29):
+        p += [(x, CY - 2, "outline"),
+              (x, CY - 1, "barrel_hl"),
+              (x, CY,     "barrel"),
+              (x, CY + 1, "barrel_sh"),
+              (x, CY + 2, "outline")]
+
+    # ---- Muzzle ----
+    p += [(29, CY - 1, "bore"), (29, CY, "bore")]
+    p += [(29, CY - 2, "outline"), (29, CY + 1, "outline")]
+    p += [(30, CY - 1, "outline"), (30, CY, "outline"), (30, CY + 1, "outline")]
+
+    # ---- Pump foregrip (under barrel, x=15-21) ----
+    for x in range(15, 22):
+        p += [(x, CY + 2, "outline"),
+              (x, CY + 3, "pump_hl"),
+              (x, CY + 4, "pump"),
+              (x, CY + 5, "pump_sh"),
+              (x, CY + 6, "outline")]
+    p += [(14, y, "outline") for y in range(CY + 3, CY + 6)]
+    p += [(22, y, "outline") for y in range(CY + 3, CY + 6)]
+
+    # ---- Trigger guard ----
+    TGL, TGR = 10, 14
+    for y in range(CY + 3, CY + 8):
+        p += [(TGL, y, "guard"), (TGR, y, "guard")]
+    p += [(x, CY + 8, "guard") for x in range(TGL + 1, TGR)]
+    p += [(x, CY + 9, "outline") for x in range(TGL, TGR + 1)]
+    p += [(TGL - 1, CY + 3, "outline"), (TGR + 1, CY + 3, "outline")]
+
+    # ---- Trigger ----
+    p += [(12, CY + 4, "trigger"), (12, CY + 5, "trigger"), (12, CY + 6, "trigger")]
+
+    return p
+
+
+def _rifle_pixels():
+    """AR-style assault rifle — barrel points east, stock on west."""
+    p = []
+    CY = 13  # barrel/receiver center y
+
+    # ---- Collapsible stock (x=2-8) ----
+    for y in range(CY - 1, CY + 5):
+        c = "stock_hl" if y == CY - 1 else ("stock_sh" if y >= CY + 3 else "stock")
+        p += [(x, y, c) for x in range(2, 9)]
+    p += [(x, CY - 2, "outline") for x in range(2, 9)]
+    p += [(x, CY + 5, "outline") for x in range(2, 9)]
+    p += [(1, y, "outline") for y in range(CY - 1, CY + 5)]
+    p += [(9, y, "outline") for y in range(CY - 1, CY + 5)]
+    # Stock skeleton cut-outs
+    p += [(4, CY + 1, "body_sh"), (4, CY + 2, "body_sh")]
+    p += [(6, CY + 1, "body_sh"), (6, CY + 2, "body_sh")]
+
+    # ---- Upper receiver + flat-top rail (x=8-18) ----
+    p += [(x, CY - 4, "rail") for x in range(8, 19)]       # Picatinny rail
+    p += [(x, CY - 5, "outline") for x in range(8, 19)]
+    for x in range(9, 18, 2):                                # Rail teeth
+        p.append((x, CY - 4, "outline"))
+    for x in range(8, 19):
+        p += [(x, CY - 3, "outline"),
+              (x, CY - 2, "body_hl"),
+              (x, CY - 1, "body"),
+              (x, CY,     "body"),
+              (x, CY + 1, "body"),
+              (x, CY + 2, "body_sh"),
+              (x, CY + 3, "outline")]
+
+    # ---- Barrel (x=18-29) ----
+    for x in range(18, 30):
+        p += [(x, CY - 2, "outline"),
+              (x, CY - 1, "barrel_hl"),
+              (x, CY,     "barrel"),
+              (x, CY + 1, "barrel_sh"),
+              (x, CY + 2, "outline")]
+    p += [(30, CY - 1, "bore"), (30, CY, "bore")]
+    p += [(30, CY - 2, "outline"), (30, CY + 1, "outline")]
+
+    # ---- Pistol grip (x=8-12, below receiver) ----
+    GX0, GX1 = 8, 12
+    for y in range(CY + 3, CY + 10):
+        for x in range(GX0, GX1 + 1):
+            c = "body_hl" if x == GX0 else "body"
+            p.append((x, y, c))
+        p += [(GX0 - 1, y, "outline"), (GX1 + 1, y, "outline")]
+    p += [(x, CY + 10, "outline") for x in range(GX0 - 1, GX1 + 2)]
+
+    # ---- Trigger guard ----
+    TGL, TGR = 12, 17
+    for y in range(CY + 3, CY + 8):
+        p += [(TGL, y, "guard"), (TGR, y, "guard")]
+    p += [(x, CY + 8, "guard") for x in range(TGL + 1, TGR)]
+    p += [(x, CY + 9, "outline") for x in range(TGL, TGR + 1)]
+
+    # ---- Trigger ----
+    p += [(14, CY + 4, "trigger"), (14, CY + 5, "trigger")]
+
+    # ---- Magazine (x=12-17, hangs down) ----
+    MX0, MX1 = 12, 17
+    for y in range(CY + 8, CY + 16):
+        for x in range(MX0, MX1 + 1):
+            c = "mag_hl" if x == MX0 else ("mag_sh" if x == MX1 else "mag")
+            p.append((x, y, c))
+        p += [(MX0 - 1, y, "outline"), (MX1 + 1, y, "outline")]
+    p += [(x, CY + 16, "outline") for x in range(MX0 - 1, MX1 + 2)]
+    # Mag curve bottom
+    p += [(MX0, CY + 15, "body_sh"), (MX1, CY + 15, "body_sh")]
+
+    # ---- Charging handle ----
+    p += [(9, CY - 3, "body_hl"), (9, CY - 5, "outline")]
+
+    return p
+
+
+def _bat_pixels():
+    """Baseball bat — barrel (thick end) points east, knob on west."""
+    p = []
+    CY = 15
+
+    # ---- Knob (rounded cap on grip end) ----
+    p += [(3, CY - 1, "knob_hl"), (3, CY, "knob"),    (3, CY + 1, "knob")]
+    p += [(4, CY - 2, "knob_hl"), (4, CY - 1, "knob"), (4, CY, "knob"),
+          (4, CY + 1, "knob"),    (4, CY + 2, "outline")]
+    p += [(2, CY - 1, "outline"), (2, CY, "outline"), (2, CY + 1, "outline")]
+    p += [(3, CY - 2, "outline"), (3, CY + 2, "outline")]
+    p += [(5, CY - 2, "outline"), (5, CY + 2, "outline")]
+
+    # ---- Handle with grip tape (x=5-12) ----
+    for x in range(5, 13):
+        p += [(x, CY - 2, "outline"),
+              (x, CY - 1, "tape_hl" if x % 2 == 1 else "wood_hl"),
+              (x, CY,     "tape"    if x % 2 == 1 else "wood"),
+              (x, CY + 1, "tape"    if x % 2 == 0 else "wood_sh"),
+              (x, CY + 2, "outline")]
+
+    # ---- Taper zone (handle to barrel, x=12-17) ----
+    for x in range(12, 18):
+        t = x - 12
+        spread = 1 + t // 2
+        for dy in range(-spread, spread + 1):
+            c = "wood_hl" if dy < 0 else ("wood_sh" if dy == spread else "wood")
+            p.append((x, CY + dy, c))
+        p += [(x, CY - spread - 1, "outline"), (x, CY + spread + 1, "outline")]
+
+    # ---- Barrel (thick hitting zone, x=17-29) ----
+    for x in range(17, 30):
+        for dy in range(-3, 4):
+            c = "wood_hl" if dy < 0 else ("wood_sh" if dy >= 2 else "wood")
+            p.append((x, CY + dy, c))
+        p += [(x, CY - 4, "outline"), (x, CY + 4, "outline")]
+    # Wood grain streaks
+    for x in range(18, 28, 3):
+        p.append((x, CY + 1, "wood_dk"))
+
+    # ---- Barrel end (rounded tip) ----
+    p += [(30, CY - 2, "outline"), (30, CY - 1, "wood"), (30, CY, "wood"),
+          (30, CY + 1, "wood_sh"),  (30, CY + 2, "outline")]
+    p += [(31, CY - 1, "outline"),  (31, CY, "wood_sh"),  (31, CY + 1, "outline")]
+
+    return p
+
+
+def _knife_pixels():
+    """Modern combat knife — clip-point blade, tip points east."""
+    p = []
+    CX, CY = 13, 15
+
+    # ---- Tactical handle (finger-groove rubber, x=CX-8 to CX-1) ----
+    for x in range(CX - 8, CX):
+        groove = (x - CX) % 2 == 0
+        p += [(x, CY - 3, "outline"),
+              (x, CY - 2, "handle_hl"),
+              (x, CY - 1, "handle"),
+              (x, CY,     "handle_tx" if groove else "handle"),
+              (x, CY + 1, "handle"),
+              (x, CY + 2, "outline")]
+    # Retaining bolts
+    for bx in [CX - 7, CX - 3]:
+        p += [(bx, CY - 1, "bolt"), (bx, CY, "bolt")]
+
+    # ---- Finger guard ----
+    for dy in range(-3, 4):
+        c = "guard_hl" if dy < 0 else "guard"
+        p += [(CX - 1, CY + dy, c), (CX, CY + dy, c)]
+    p += [(CX - 1, CY - 4, "outline"), (CX, CY - 4, "outline")]
+    p += [(CX - 1, CY + 4, "outline"), (CX, CY + 4, "outline")]
+    p += [(CX - 2, CY - 3, "outline"), (CX - 2, CY - 2, "outline")]
+    p += [(CX + 1, CY - 3, "outline"), (CX + 1, CY - 2, "outline")]
+    p += [(CX - 2, CY + 2, "outline"), (CX - 2, CY + 3, "outline")]
+    p += [(CX + 1, CY + 2, "outline"), (CX + 1, CY + 3, "outline")]
+
+    # ---- Blade spine (top/back edge, straight) ----
+    # ---- Blade belly (bottom edge, curves to clip point at tip) ----
+    # Main blade body (x=CX+1 to CX+10)
+    for x in range(CX + 1, CX + 11):
+        p += [(x, CY - 3, "outline"),
+              (x, CY - 2, "blade_hl"),
+              (x, CY - 1, "blade_hl"),
+              (x, CY,     "blade"),
+              (x, CY + 1, "blade_sh"),
+              (x, CY + 2, "outline")]
+    # Serration on spine
+    for x in range(CX + 2, CX + 9, 2):
+        p.append((x, CY - 3, "serrate"))
+
+    # Clip taper (x=CX+10 to CX+15, spine drops to meet edge)
+    for x in range(CX + 10, CX + 15):
+        t = x - (CX + 10)
+        top_s = max(0, 2 - t)   # spine clips down
+        bot_s = max(0, 2 - t)   # edge also closes
+        for dy in range(-top_s, bot_s + 1):
+            c = "blade_hl" if dy < 0 else ("blade" if dy == 0 else "blade_sh")
+            p.append((x, CY + dy, c))
+        if top_s >= 0:
+            p += [(x, CY - top_s - 1, "outline"), (x, CY + bot_s + 1, "outline")]
+
+    # Tip
+    p += [(CX + 15, CY, "blade_hl"), (CX + 15, CY + 1, "outline")]
+
+    return p
+
+
+def _chain_pixels():
+    """Metal chain — alternating H/V oval links extending east."""
+    p = []
+
+    # 8 links in a roughly horizontal band, slight wave
+    links = [
+        (4,  13, "h"), (8,  16, "v"), (12, 13, "h"),
+        (16, 16, "v"), (20, 13, "h"), (24, 16, "v"),
+        (28, 13, "h"),
+    ]
+
+    for (lx, ly, orient) in links:
+        if orient == "h":   # horizontal oval (5w × 3h)
+            for dx in range(-2, 3):
+                p += [(lx + dx, ly - 1, "metal_hl"),
+                      (lx + dx, ly,     "metal"),
+                      (lx + dx, ly + 1, "metal_sh")]
+            # End caps
+            p += [(lx - 3, ly - 1, "outline"), (lx - 3, ly, "metal_sh"), (lx - 3, ly + 1, "outline")]
+            p += [(lx + 3, ly - 1, "outline"), (lx + 3, ly, "metal"),    (lx + 3, ly + 1, "outline")]
+            # Top/bottom outlines
+            p += [(lx + dx, ly - 2, "outline") for dx in range(-2, 3)]
+            p += [(lx + dx, ly + 2, "outline") for dx in range(-2, 3)]
+            # Inner hole
+            p += [(lx - 1, ly, "link_in"), (lx, ly, "link_in"), (lx + 1, ly, "link_in")]
+        else:               # vertical oval (3w × 5h)
+            for dy in range(-2, 3):
+                p += [(lx,     ly + dy, "metal_hl"),
+                      (lx + 1, ly + dy, "metal"),
+                      (lx + 2, ly + dy, "metal_sh")]
+            # End caps
+            p += [(lx, ly - 3, "outline"), (lx + 1, ly - 3, "metal_hl"),   (lx + 2, ly - 3, "outline")]
+            p += [(lx, ly + 3, "outline"), (lx + 1, ly + 3, "metal_sh"),   (lx + 2, ly + 3, "outline")]
+            # Side outlines
+            p += [(lx - 1, ly + dy, "outline") for dy in range(-2, 3)]
+            p += [(lx + 3, ly + dy, "outline") for dy in range(-2, 3)]
+            # Inner hole
+            p += [(lx + 1, ly - 1, "link_in"), (lx + 1, ly, "link_in"), (lx + 1, ly + 1, "link_in")]
+
+    # Connecting segments between links (thin metal bars)
+    for i in range(len(links) - 1):
+        x0, y0, _ = links[i]
+        x1, y1, _ = links[i + 1]
+        # midpoint connector
+        mx = (x0 + x1) // 2
+        my = (y0 + y1) // 2
+        p += [(mx, my, "metal"), (mx, my + 1, "metal_sh")]
+
+    return p
+
+
+def _molotov_pixels():
+    """Molotov cocktail — bottle horizontal, flame tip points east."""
+    p = []
+    CY = 15
+
+    # ---- Bottle body (x=4-18, oval glass bottle) ----
+    for x in range(5, 18):
+        spread = 4 if 7 <= x <= 15 else 3
+        for dy in range(-spread, spread + 1):
+            c = "glass_hl" if dy < -1 else ("glass_sh" if dy >= spread - 1 else "glass")
+            p.append((x, CY + dy, c))
+        p += [(x, CY - spread - 1, "outline"), (x, CY + spread + 1, "outline")]
+    # Left cap
+    p += [(4, CY - 2, "outline"), (4, CY - 1, "glass"), (4, CY, "glass"),
+          (4, CY + 1, "glass"),   (4, CY + 2, "outline")]
+    p += [(3, CY - 1, "outline"), (3, CY, "outline"), (3, CY + 1, "outline")]
+
+    # Liquid inside (fills lower third)
+    for x in range(6, 17):
+        p += [(x, CY + 1, "liquid"), (x, CY + 2, "liquid_hl" if x % 2 == 0 else "liquid"),
+              (x, CY + 3, "liquid")]
+
+    # ---- Bottle neck (x=18-23, narrowing) ----
+    for x in range(18, 24):
+        p += [(x, CY - 2, "outline"),
+              (x, CY - 1, "glass"),
+              (x, CY,     "glass"),
+              (x, CY + 1, "glass_sh"),
+              (x, CY + 2, "outline")]
+
+    # ---- Rag stopper (x=23-27) ----
+    for x in range(23, 28):
+        p += [(x, CY - 2, "outline"),
+              (x, CY - 1, "rag"),
+              (x, CY,     "rag"),
+              (x, CY + 1, "rag_sh"),
+              (x, CY + 2, "outline")]
+
+    # ---- Flame (x=27-31) ----
+    # Base of flame (wide)
+    p += [(27, CY - 1, "flame"),     (27, CY, "flame"),     (27, CY + 1, "rag")]
+    p += [(28, CY - 2, "flame"),     (28, CY - 1, "flame_hl"), (28, CY, "flame")]
+    p += [(29, CY - 3, "flame_hl"),  (29, CY - 2, "flame"),    (29, CY - 1, "flame_tip")]
+    p += [(30, CY - 3, "flame"),     (30, CY - 2, "flame_tip")]
+    p += [(31, CY - 2, "flame_tip"), (31, CY - 1, "flame_tip")]
+    # Flame outline/glow
+    p += [(26, CY - 2, "outline"),   (26, CY - 1, "flame"),    (26, CY, "rag")]
+    p += [(27, CY - 2, "outline"),   (28, CY - 3, "outline"),  (29, CY - 4, "outline")]
+    p += [(30, CY - 4, "outline"),   (31, CY - 3, "outline")]
+
+    return p
+
+
+def _taser_pixels():
+    """Electric stun gun (Taser) — prongs point east, grip south."""
+    p = []
+    CY = 14  # center y of body
+
+    # ---- Body (x=7-24, blue housing) ----
+    for x in range(7, 25):
+        p += [(x, CY - 3, "outline"),
+              (x, CY - 2, "body_hl"),
+              (x, CY - 1, "body"),
+              (x, CY,     "body"),
+              (x, CY + 1, "body_sh"),
+              (x, CY + 2, "outline")]
+    p += [(6, y, "outline") for y in range(CY - 2, CY + 2)]
+
+    # ---- Yellow label strip on body ----
+    for x in range(12, 20):
+        p += [(x, CY - 1, "prong"), (x, CY, "prong_hl")]
+    p += [(11, CY - 1, "outline"), (20, CY - 1, "outline")]
+    p += [(11, CY, "outline"),     (20, CY, "outline")]
+
+    # ---- Trigger button ----
+    p += [(15, CY - 3, "trigger"), (15, CY - 2, "label")]
+    p += [(14, CY - 3, "outline"), (16, CY - 3, "outline")]
+
+    # ---- Grip (x=7-11, black rubber) ----
+    GX0, GX1 = 7, 11
+    for y in range(CY + 2, CY + 11):
+        for x in range(GX0, GX1 + 1):
+            c = "grip_hl" if x == GX0 else ("grip_tx" if (x + y) % 3 == 0 else "grip")
+            p.append((x, y, c))
+        p += [(GX0 - 1, y, "outline"), (GX1 + 1, y, "outline")]
+    p += [(x, CY + 11, "outline") for x in range(GX0 - 1, GX1 + 2)]
+
+    # ---- Prongs (twin electric probes at front) ----
+    # Upper prong (x=24-28, y=CY-2)
+    for x in range(24, 29):
+        c = "prong_hl" if x % 2 == 0 else "prong"
+        p += [(x, CY - 2, c)]
+    p += [(24, CY - 3, "outline"), (28, CY - 3, "outline")]
+    p += [(24, CY - 1, "outline"), (28, CY - 1, "outline")]
+    p += [(29, CY - 2, "outline")]
+
+    # Lower prong (x=24-28, y=CY+1)
+    for x in range(24, 29):
+        c = "prong_hl" if x % 2 == 0 else "prong"
+        p += [(x, CY + 1, c)]
+    p += [(24, CY, "outline"),     (28, CY, "outline")]
+    p += [(24, CY + 2, "outline"), (28, CY + 2, "outline")]
+    p += [(29, CY + 1, "outline")]
+
+    # ---- Electric arc between prong tips ----
+    p += [(29, CY - 1, "arc_hl"),  (29, CY, "arc")]
+    p += [(30, CY - 2, "arc"),     (30, CY - 1, "arc_hl"), (30, CY + 1, "arc_hl")]
+    p += [(31, CY - 1, "arc_hl"),  (31, CY, "arc_hl")]
+
+    return p
+
+
 WEAPON_PIXELS = {
+    # Fantasy / Medieval
     "sword":      _sword_pixels,
     "axe":        _axe_pixels,
     "spear":      _spear_pixels,
@@ -533,6 +1115,35 @@ WEAPON_PIXELS = {
     "dagger":     _dagger_pixels,
     "mace":       _mace_pixels,
     "greatsword": _greatsword_pixels,
+    # Modern / Urban
+    "pistol":     _pistol_pixels,
+    "shotgun":    _shotgun_pixels,
+    "rifle":      _rifle_pixels,
+    "bat":        _bat_pixels,
+    "knife":      _knife_pixels,
+    "chain":      _chain_pixels,
+    "molotov":    _molotov_pixels,
+    "taser":      _taser_pixels,
+}
+
+# Weapon category metadata (used by the web UI)
+WEAPON_CATEGORIES = {
+    "sword":      "fantasy",
+    "axe":        "fantasy",
+    "spear":      "fantasy",
+    "staff":      "fantasy",
+    "bow":        "fantasy",
+    "dagger":     "fantasy",
+    "mace":       "fantasy",
+    "greatsword": "fantasy",
+    "pistol":     "modern",
+    "shotgun":    "modern",
+    "rifle":      "modern",
+    "bat":        "modern",
+    "knife":      "modern",
+    "chain":      "modern",
+    "molotov":    "modern",
+    "taser":      "modern",
 }
 
 # ---------------------------------------------------------------------------
@@ -662,7 +1273,7 @@ def _generate_weapon(weapon_name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate medieval/fantasy weapon sprites")
+    parser = argparse.ArgumentParser(description="Generate weapon sprites (fantasy + modern)")
     parser.add_argument("--weapon", choices=list(WEAPON_PIXELS.keys()),
                         help="Weapon type to generate")
     parser.add_argument("--all",  action="store_true", help="Generate all weapon types")
