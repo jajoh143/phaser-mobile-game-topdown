@@ -53,88 +53,88 @@ WEAPON_SCALE = 0.5
 # ---------------------------------------------------------------------------
 # WEAPON HAND ANCHORS
 #
-# For each slash frame and direction, defines where to place the weapon
-# sprite's "grip center" relative to the frame origin (0,0).
+# Pixel positions of the weapon-hand (forearm tip center) inside the 32×32
+# frame for each animation frame. Derived from the shoulder-pivot arm system
+# in generate_character.py:
 #
-# The grip is placed at the character's weapon-hand position during each
-# slash frame, and the weapon sprite is centered on that point.
+#   Weapon arm per direction:
+#     down  → right arm, shoulder at (22, 18)
+#     up    → right arm, shoulder at (22, 18)   [back view, same screen side]
+#     left  → left  arm, shoulder at (16, 18)   [front arm in side view]
+#     right → right arm, shoulder at (15, 18)   [front arm in side view, mirrored]
 #
-# Directions:
-#   down  → character faces forward; weapon hand = right arm (east-ish)
-#   up    → character faces back;    weapon hand = right arm (east-ish from back)
-#   left  → character faces left;    weapon hand = front arm
-#   right → character faces right;   weapon hand = front arm
+#   Forearm tip = center of the outermost 3-4 px row of the arm pose.
+#   All coordinates are in the native 32×32 pixel space.
 #
-# Weapon orientation per direction:
-#   down  → "south"  (tip points down/forward in front view)
-#   up    → "north"  (tip points away/back in back view)
-#   left  → "west"   (tip points left in side view)
-#   right → "east"   (tip points right in side view)
+#   Weapon orient frames in the weapon spritesheet:
+#     0=east (tip→right), 1=south (tip→down), 2=west (tip→left), 3=north (tip→up)
 #
-# Each entry: (hand_x, hand_y) — pixel position of weapon grip in the frame.
-# The weapon sprite is pasted with its center at this point.
 # ---------------------------------------------------------------------------
 
 # Slash animation frame anchor positions per direction.
-# F0=windup, F1=strike, F2=follow, F3=recover
+# F0=windup  F1=strike  F2=follow  F3=recover
+#
+# Calculated from actual arm-pose pixel offsets in generate_character.py:
+#   "down"  R-arm mirrored: slash_windup→(24,13)  slash_strike→(28,22)
+#                           slash_follow→(27,22)  hang→(24,23)
+#   "up"    R-arm same positions as down (same shoulder x=22)
+#   "left"  L-arm direct:   side_slash_windup→(13,14)  side_slash_strike→(10,22)
+#                           side_slash_follow→(10,19)  side_hang→(13,23)
+#   "right" R-arm mirrored: side_slash_windup→(18,14)  side_slash_strike→(21,22)
+#                           side_slash_follow→(21,19)  side_hang→(18,23)
 _SLASH_HAND_ANCHORS = {
     "down": {
-        # Weapon in right hand, shoulder at ~(22,18), arm swings up then forward-down
         "orient": "east",
         "anchors": [
-            (27, 12),   # F0 windup: hand raised upper-right
-            (28, 22),   # F1 strike: hand extended right-down (strike point)
-            (26, 22),   # F2 follow: hand slightly in from full extension
-            (23, 22),   # F3 recover: hand returning to rest
+            (24, 13),   # F0 windup:  arm raised, hand upper-right
+            (28, 22),   # F1 strike:  arm fully extended diagonal right-down
+            (27, 22),   # F2 follow:  arm settling, slightly in
+            (24, 23),   # F3 recover: arm hanging at side
         ],
         "angle": [
-            -70,   # F0: weapon angled up (windup)
-            -20,   # F1: weapon angled forward-down (strike)
-             10,   # F2: weapon tilting past horizontal
-              0,   # F3: neutral
+            -80,   # weapon tip pointing up (near-vertical)
+             20,   # weapon tip pointing lower-right (arm extended down-right)
+              5,   # weapon tip just past horizontal
+              0,   # neutral hang
         ],
     },
     "up": {
-        # Back view, same arm position mirrored
-        "orient": "west",
+        # Back view — weapon arm is still screen-right (same shoulder x=22).
+        "orient": "east",
         "anchors": [
-            (4, 12),    # F0 windup: hand raised upper-left (back view)
-            (3, 22),    # F1 strike
-            (5, 22),    # F2 follow
-            (8, 22),    # F3 recover
+            (24, 13),
+            (28, 22),
+            (27, 22),
+            (24, 23),
         ],
-        "angle": [
-            -70, -20, 10, 0,
-        ],
+        "angle": [-80, 20, 5, 0],
     },
     "left": {
-        # Front arm swings; character faces left, arm extends to the left
+        # Left-facing: front (left) arm swings; shoulder at (16, 18).
         "orient": "west",
         "anchors": [
-            (12, 10),   # F0 windup: hand up (raised above head area)
-            (5,  22),   # F1 strike: arm extended forward-down
-            (4,  20),   # F2 follow: arm horizontal forward
-            (13, 22),   # F3 recover: arm returning
+            (13, 14),   # F0 windup:  arm raised above head
+            (10, 22),   # F1 strike:  arm fully extended forward-down
+            (10, 19),   # F2 follow:  arm horizontal forward
+            (13, 23),   # F3 recover: arm hanging
         ],
         "angle": [
-            -80,   # F0: weapon near-vertical (windup)
-            -30,   # F1: weapon angled forward-down
-             10,   # F2: weapon tilting forward
-              0,   # F3: neutral
+             80,   # (west+80°CW ≈ pointing up-left)
+            -20,   # weapon tip leading slightly above forward
+             -5,
+              0,
         ],
     },
     "right": {
-        # Front arm swings; character faces right, arm extends to the right
+        # Right-facing: front (right) arm swings (mirrored); shoulder at (15, 18).
         "orient": "east",
         "anchors": [
-            (19, 10),   # F0 windup
-            (26, 22),   # F1 strike
-            (27, 20),   # F2 follow
-            (18, 22),   # F3 recover
+            (18, 14),   # F0 windup
+            (21, 22),   # F1 strike
+            (21, 19),   # F2 follow
+            (18, 23),   # F3 recover
         ],
-        "angle": [
-            -80, -30, 10, 0,
-        ],
+        "angle": [-80, 20, 5, 0],
     },
 }
 
@@ -351,19 +351,28 @@ if(img.complete) setInterval(draw,1000/FPS);
 # ---------------------------------------------------------------------------
 
 _CARRY_ANCHORS = {
-    "down":  {"orient": "east",  "x": 22, "y": 19, "angle": -20},
-    "left":  {"orient": "west",  "x":  7, "y": 18, "angle":   0},
-    "right": {"orient": "east",  "x": 24, "y": 18, "angle":   0},
-    "up":    {"orient": "west",  "x": 10, "y": 19, "angle": -20},
+    # Forearm-tip center of the hanging arm in the 32×32 pixel frame.
+    # "down"  R-arm shoulder(22,18) + hang offsets(+2,+5) → (24, 23)
+    # "up"    same shoulder x, back view                  → (24, 23)
+    # "left"  L-arm shoulder(16,18) + side_hang(-3,+5)   → (13, 23)
+    # "right" R-arm shoulder(15,18) + mirrored(+3,+5)    → (18, 23)
+    "down":  {"orient": "east",  "x": 24, "y": 23, "angle":  0},
+    "left":  {"orient": "west",  "x": 13, "y": 23, "angle":  0},
+    "right": {"orient": "east",  "x": 18, "y": 23, "angle":  0},
+    "up":    {"orient": "east",  "x": 24, "y": 23, "angle":  0},
 }
 
 # Per-frame walk delta (dx, dy) added to the carry anchor.
-# Frames 0-3 map to walk frames 0-3. Other animations use frame 0 delta (0,0).
+# Based on actual arm-pose forearm tip y per walk frame:
+#   "down"  R: F0=mid_back(y22) F1=swing_back(y23) F2=mid_fwd(y22) F3=swing_fwd(y21)
+#   "left"  L: F0=side_hang(y23) F1=side_fwd(y22) F2=side_hang(y23) F3=side_back(y24)
+#   "right" mirrored — same y variation as "left"
+#   "up"    same as "down"
 _WALK_DELTAS = {
-    "down":  [(0, 0), ( 1, -1), (0,  1), (-1, 0)],
-    "left":  [(0, 0), (-1, -1), (0,  1), ( 1, 0)],
-    "right": [(0, 0), ( 1, -1), (0,  1), (-1, 0)],
-    "up":    [(0, 0), (-1, -1), (0,  1), ( 1, 0)],
+    "down":  [(0, -1), (0,  0), (0, -1), (0, -2)],
+    "left":  [(0,  0), (0, -1), (0,  0), (0,  1)],
+    "right": [(0,  0), (0, -1), (0,  0), (0,  1)],
+    "up":    [(0, -1), (0,  0), (0, -1), (0, -2)],
 }
 
 

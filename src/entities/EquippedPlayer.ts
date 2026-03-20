@@ -1,31 +1,26 @@
 /**
  * EquippedPlayer — physics sprite + runtime weapon overlay.
  *
- * Architecture (Option B — runtime overlay):
- *   - `body`   : Phaser Arcade physics sprite for the character (scale 2 → 64×64 on screen)
- *   - `weapon` : plain Image sprite rendered on top each frame  (scale 1 → 32×32 on screen)
+ * Architecture:
+ *   - `body`   : Phaser Arcade physics sprite for the character (scale 2 → 64×64 px)
+ *   - `weapon` : Phaser Sprite overlay positioned each frame via hand-anchor data
  *
- * The weapon is repositioned every frame using hand-anchor JSON exported by
- * tools/sprite-generator/export_for_game.py. No baked equipped spritesheets needed.
- *
- * Anchor formula (pixel space → screen space):
+ * The weapon is repositioned every frame using hand_anchors.json:
  *   weapon.x = body.x + (anchor.x - FRAME_HALF) * CHAR_SCALE
  *   weapon.y = body.y + (anchor.y - FRAME_HALF) * CHAR_SCALE
  *
- * where FRAME_HALF = 16 (half of the 32×32 frame), CHAR_SCALE = 2.
+ * Melee  weapons (sword/axe/etc) → `attack()` plays the slash animation.
+ * Ranged weapons (gun/bow/staff)  → `attack()` plays interact briefly, fires
+ *   `onFire` callback so the scene can spawn the projectile.
  */
 
 import Phaser from 'phaser'
 import { Inventory } from '@/systems/Inventory'
 
-// Must match FRAME_W / FRAME_H in the Python generators
-const FRAME_W     = 32
-const FRAME_H     = 32
+const FRAME_W        = 32
 const FRAMES_PER_DIR = 4
-
-const CHAR_SCALE  = 2   // body sprite scale → 64×64 on screen
-const WEAPON_SCALE = 1  // weapon sprite scale → 32×32 on screen (= 50% of 64)
-const FRAME_HALF  = FRAME_W / 2
+const CHAR_SCALE     = 2   // body sprite → 64×64 on screen
+const FRAME_HALF     = FRAME_W / 2
 
 const ANIMATIONS  = ['walk', 'jump', 'crouch', 'interact', 'slash'] as const
 const DIRECTIONS  = ['down', 'left', 'right', 'up'] as const
@@ -49,69 +44,86 @@ const ORIENT_TO_FRAME: Record<string, number> = {
   north: 3,
 }
 
-const MOVE_SPEED = 160
+// Weapons that fire projectiles instead of melee-slashing
+const RANGED_WEAPONS = new Set([
+  'pistol', 'shotgun', 'rifle', 'bow',
+])
+// Weapons that cast spells / area effects
+const SPELL_WEAPONS = new Set([
+  'staff',
+])
+// Thrown weapons
+const THROWN_WEAPONS = new Set([
+  'molotov',
+])
+
+export type AttackType = 'melee' | 'ranged' | 'spell' | 'thrown'
+
+export interface FireEvent {
+  x: number           // world-space muzzle position
+  y: number
+  dirX: number        // unit direction vector
+  dirY: number
+  weapon: string
+  type: AttackType
+}
 
 export class EquippedPlayer {
-  /** The physics-enabled character sprite. Add this to the physics group. */
+  /** Physics-enabled character sprite. */
   readonly body: Phaser.Physics.Arcade.Sprite
 
-  /** The weapon overlay sprite. Add this to a display group above the character. */
-  readonly weapon: Phaser.GameObjects.Image
+  /** Weapon overlay sprite. Always rendered on top of the character. */
+  readonly weapon: Phaser.GameObjects.Sprite
 
   readonly inventory: Inventory
 
-  private scene:       Phaser.Scene
-  private anchors:     AnchorData | null = null
-  private currentAnim: AnimName   = 'walk'
-  private currentDir:  DirName    = 'down'
-  private frameIdx:    number     = 0
-  private isSlashing:  boolean    = false
-  private slashTimer:  Phaser.Time.TimerEvent | null = null
+  private scene:        Phaser.Scene
+  private anchors:      AnchorData | null = null
+  private currentAnim:  AnimName   = 'walk'
+  private currentDir:   DirName    = 'down'
+  private isAttacking:  boolean    = false
+
+  /** Called when a ranged/spell/thrown weapon fires. */
+  onFire: ((e: FireEvent) => void) | null = null
 
   constructor(scene: Phaser.Scene, x: number, y: number, presetKey: string) {
     this.scene     = scene
     this.inventory = new Inventory()
 
-    // ── Character sprite ───────────────────────────────────────────────────
     this.body = scene.physics.add.sprite(x, y, presetKey)
     this.body.setScale(CHAR_SCALE)
     this.body.setCollideWorldBounds(true)
 
-    // ── Weapon overlay ─────────────────────────────────────────────────────
-    this.weapon = scene.add.image(x, y, '__missing__')
-    this.weapon.setScale(WEAPON_SCALE)
+    // Weapon uses Sprite (not Image) so setFrame() is reliable on spritesheets
+    this.weapon = scene.add.sprite(x, y, '__missing__')
+    this.weapon.setScale(1)
     this.weapon.setVisible(false)
   }
 
-  /** Call after loading hand_anchors.json. */
   setAnchors(data: AnchorData): void {
     this.anchors = data
   }
 
-  /** Register Phaser animations from the character spritesheet. */
   createAnimations(presetKey: string): void {
     const anims = this.scene.anims
-
     ANIMATIONS.forEach((anim, animIdx) => {
       DIRECTIONS.forEach((dir, dirIdx) => {
         const row   = animIdx * DIRECTIONS.length + dirIdx
         const key   = `${presetKey}_${anim}_${dir}`
         const start = row * FRAMES_PER_DIR
         const end   = start + FRAMES_PER_DIR - 1
-
         if (!anims.exists(key)) {
           anims.create({
             key,
             frames:    anims.generateFrameNumbers(presetKey, { start, end }),
-            frameRate: anim === 'slash' ? 10 : 7,
-            repeat:    anim === 'slash' ? 0  : -1,
+            frameRate: anim === 'slash' || anim === 'interact' ? 10 : 7,
+            repeat:    anim === 'slash' || anim === 'interact' ? 0  : -1,
           })
         }
       })
     })
   }
 
-  /** Switch to a different weapon by name (must already be in inventory). */
   equipWeapon(weaponName: string | null): void {
     if (!weaponName) {
       this.weapon.setVisible(false)
@@ -124,36 +136,98 @@ export class EquippedPlayer {
     }
     this.weapon.setTexture(key)
     this.weapon.setVisible(true)
-    this._updateWeaponFrame()
+    this._updateWeaponOverlay()
   }
 
-  /** Trigger a slash animation. Reverts to carry pose when done. */
-  slash(): void {
-    if (this.isSlashing) return
-    if (this.inventory.active === null) return
+  /** Perform an attack appropriate for the active weapon. */
+  attack(): void {
+    if (this.isAttacking) return
+    const w = this.inventory.active
+    if (!w) return
 
-    this.isSlashing = true
+    const type = this._attackType(w)
+    if (type === 'melee') {
+      this._doSlash()
+    } else {
+      this._doRanged(w, type)
+    }
+  }
+
+  /** Call every frame with current velocity. */
+  update(vx: number, vy: number): void {
+    if (!this.isAttacking) {
+      this._updateDirection(vx, vy)
+      this._updateMovementAnim(vx, vy)
+    }
+    this._updateWeaponOverlay()
+  }
+
+  // ── public helpers ─────────────────────────────────────────────────────────
+
+  getAttackType(): AttackType | null {
+    const w = this.inventory.active
+    return w ? this._attackType(w) : null
+  }
+
+  // ── private ───────────────────────────────────────────────────────────────
+
+  private _attackType(w: string): AttackType {
+    if (RANGED_WEAPONS.has(w)) return 'ranged'
+    if (SPELL_WEAPONS.has(w))  return 'spell'
+    if (THROWN_WEAPONS.has(w)) return 'thrown'
+    return 'melee'
+  }
+
+  private _dirVector(): { x: number; y: number } {
+    const map: Record<DirName, { x: number; y: number }> = {
+      down:  { x:  0, y:  1 },
+      up:    { x:  0, y: -1 },
+      left:  { x: -1, y:  0 },
+      right: { x:  1, y:  0 },
+    }
+    return map[this.currentDir]
+  }
+
+  private _doSlash(): void {
+    this.isAttacking = true
+    this.currentAnim = 'slash'
     const key = `${this.body.texture.key}_slash_${this.currentDir}`
     this.body.play(key)
     this.body.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-      this.isSlashing = false
+      this.isAttacking = false
+      this.currentAnim = 'walk'
       this._resumeMovementAnim()
     })
   }
 
-  /**
-   * Call every frame from the scene's update() with the current velocity
-   * or movement state. Pass null velocity to play idle (frame 0).
-   */
-  update(vx: number, vy: number): void {
-    if (!this.isSlashing) {
-      this._updateDirection(vx, vy)
-      this._updateMovementAnim(vx, vy)
-    }
-    this._updateWeaponFrame()
-  }
+  private _doRanged(weapon: string, type: AttackType): void {
+    this.isAttacking = true
+    this.currentAnim = 'interact'
 
-  // ── private helpers ───────────────────────────────────────────────────────
+    // Fire callback at frame 1 (arm extended) via a short delay
+    this.scene.time.delayedCall(80, () => {
+      if (this.onFire) {
+        const dir = this._dirVector()
+        // Muzzle position = weapon sprite's world position
+        this.onFire({
+          x:      this.weapon.visible ? this.weapon.x : this.body.x,
+          y:      this.weapon.visible ? this.weapon.y : this.body.y,
+          dirX:   dir.x,
+          dirY:   dir.y,
+          weapon,
+          type,
+        })
+      }
+    })
+
+    const key = `${this.body.texture.key}_interact_${this.currentDir}`
+    this.body.play(key)
+    this.body.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.isAttacking = false
+      this.currentAnim = 'walk'
+      this._resumeMovementAnim()
+    })
+  }
 
   private _updateDirection(vx: number, vy: number): void {
     if (Math.abs(vx) > Math.abs(vy)) {
@@ -165,29 +239,29 @@ export class EquippedPlayer {
 
   private _updateMovementAnim(vx: number, vy: number): void {
     const isMoving = vx !== 0 || vy !== 0
-    const key = `${this.body.texture.key}_walk_${this.currentDir}`
-
+    const key      = `${this.body.texture.key}_walk_${this.currentDir}`
     if (isMoving) {
       if (this.body.anims.currentAnim?.key !== key) {
         this.body.play(key)
+        this.currentAnim = 'walk'
       }
     } else {
-      // Idle — stop on frame 0 of the current direction's walk row
       this.body.anims.stop()
-      const animIdx  = 0 // walk
+      this.currentAnim = 'walk'
+      const animIdx  = 0  // walk row
       const dirIdx   = DIRECTIONS.indexOf(this.currentDir)
       const row      = animIdx * DIRECTIONS.length + dirIdx
-      const frameNum = row * FRAMES_PER_DIR
-      this.body.setFrame(frameNum)
+      this.body.setFrame(row * FRAMES_PER_DIR)
     }
   }
 
   private _resumeMovementAnim(): void {
     const key = `${this.body.texture.key}_walk_${this.currentDir}`
     this.body.play(key)
+    this.currentAnim = 'walk'
   }
 
-  private _updateWeaponFrame(): void {
+  private _updateWeaponOverlay(): void {
     if (!this.anchors || this.inventory.active === null) {
       this.weapon.setVisible(false)
       return
@@ -196,20 +270,17 @@ export class EquippedPlayer {
     const animFrames = this.anchors[this.currentAnim]?.[this.currentDir]
     if (!animFrames) return
 
-    // Determine current frame index from the sprite's playing animation
-    const currentFrame = this.body.anims.currentFrame
-    const frameIdx     = currentFrame ? currentFrame.index % FRAMES_PER_DIR : 0
-    const anchor       = animFrames[frameIdx] ?? animFrames[0]
+    // currentFrame.index is 1-based in Phaser 3, so subtract 1 for 0-based
+    const rawIdx   = this.body.anims.currentFrame?.index ?? 1
+    const frameIdx = (rawIdx - 1) % FRAMES_PER_DIR
+    const anchor   = animFrames[frameIdx] ?? animFrames[0]
 
-    // Position weapon in screen space
+    // Convert 32×32 pixel-space coords to screen space
     const ox = (anchor.x - FRAME_HALF) * CHAR_SCALE
     const oy = (anchor.y - FRAME_HALF) * CHAR_SCALE
     this.weapon.setPosition(this.body.x + ox, this.body.y + oy)
     this.weapon.setAngle(anchor.angle)
-
-    // Select correct orientation frame from the weapon spritesheet
-    const orientFrame = ORIENT_TO_FRAME[anchor.orient] ?? 0
-    this.weapon.setFrame(orientFrame)
+    this.weapon.setFrame(ORIENT_TO_FRAME[anchor.orient] ?? 0)
     this.weapon.setVisible(true)
   }
 }
